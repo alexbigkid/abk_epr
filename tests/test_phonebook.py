@@ -6,6 +6,7 @@ from .context import Phonebook
 
 @pytest.fixture
 def phonebook(tmpdir):
+    "Provides an empty phonebook"
     return Phonebook(tmpdir)
 
 def test_lookup_by_name(phonebook):
