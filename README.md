@@ -48,7 +48,7 @@ EXIF image renamer - renames all image files in the folder according to image fi
 
 
 #### Test ran on:
-- [x] MacOS Big Sur (local machine and pipeline) / Python 3.9.4
+- [x] MacOS Big Sur (local machine and pipeline) / Python 3.8.9
 - [ ] Linux Ubuntu 20.04 (pipeline machine) / Python 3.8.5
 - [ ] Windows 10 (pipeline) / Python 3.7
 - [ ] Raspberry Pi Zero W (via ssh) / Python 3.7.3
