@@ -3,16 +3,16 @@
 
 # Standard library imports
 import sys
+# import asyncio
 
 # Third party imports
 from optparse import OptionParser
-import asyncio
 from pydngconverter import DNGConverter, flags
 from colorama import Fore, Style
-import exiftool
+# import exiftool
 
 # Local application imports
-# from ingredients_input import IngredientsInput
+from _version import __version__
 
 class ExifRename:
     """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
@@ -22,7 +22,7 @@ class ExifRename:
 
     def handle_options(self):
         usage_string = "usage: %prog [options]"
-        version_string = "%prog 1.0.0"
+        version_string = "%prog version: " + Fore.GREEN + f"{__version__}{Style.RESET_ALL}"
         parser = OptionParser(usage=usage_string, version=version_string)
         parser.add_option(
             "-d",
@@ -49,10 +49,10 @@ class ExifRename:
             print(f"options: {self._options}")
             print(f"args: {self._args}")
             print(f"options.dir: {self._options.dir}")
+            print(f"__version__: {__version__}")
 
 def main():
     exit_code = 0
-    # handle_options()
 
     try:
         exif_rename = ExifRename()
