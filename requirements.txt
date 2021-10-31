@@ -1,2 +1,3 @@
+optparse-pretty
 pydngconverter
 pyexiftool

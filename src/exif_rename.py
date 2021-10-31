@@ -14,33 +14,49 @@ import exiftool
 # Local application imports
 # from ingredients_input import IngredientsInput
 
-def handle_options():
-    usage_string = "usage: %prog [options] [directory_name]"
-    version_string = "%prog 1.0"
-    parser = OptionParser(usage=usage_string, version=version_string)
-    parser.add_option(
-        "-d",
-        "--directory",
-        action="store",
-        default=".",
-        help=" directory name to convert and rename images"
-    )
-    (options, args) = parser.parse.args()
+class ExifRename:
+    """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
 
-    if len(args) > 1:
-        parser.error("wrong number of arguments")
+    _options = None
+    _args = None
 
-    print(options)
-    print(args)
+    def handle_options(self):
+        usage_string = "usage: %prog [options]"
+        version_string = "%prog 1.0.0"
+        parser = OptionParser(usage=usage_string, version=version_string)
+        parser.add_option(
+            "-d",
+            "--directory",
+            action="store",
+            dest="dir",
+            default=".",
+            help="directory, where images will be converted and renamed"
+        )
+        parser.add_option(
+            "-v",
+            "--verbose",
+            action="store_true",
+            dest="verbose",
+            default=False,
+            help="verbose execution"
+        )
+        (self._options, self._args) = parser.parse_args()
+
+        if len(self._args) != 0:
+            parser.error("wrong number of arguments")
+
+        if self._options.verbose:
+            print(f"options: {self._options}")
+            print(f"args: {self._args}")
+            print(f"options.dir: {self._options.dir}")
 
 def main():
     exit_code = 0
-    handle_options()
+    # handle_options()
 
     try:
-        pass
-        # ingredient_list = get_ingredients()
-        # ingredient_list = ['garlic', 'ginger', 'granny smith apple']
+        exif_rename = ExifRename()
+        exif_rename.handle_options()
     except Exception as exception:
         print(Fore.RED + f"ERROR: executing exif image renamer")
         print(f"{exception}{Style.RESET_ALL}")
