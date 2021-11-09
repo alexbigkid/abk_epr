@@ -31,12 +31,12 @@ jobs:
 
             - name: Python Info
               run: |
-                echo
+                echo ""
                 echo "------------------------"
                 echo "Python version"
                 echo "------------------------"
                 python --version
-                echo
+                echo ""
                 echo "------------------------"
                 echo "Python3 version"
                 echo "------------------------"
