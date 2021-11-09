@@ -31,9 +31,15 @@ jobs:
 
             - name: Python Info
               run: |
-                echo "\n------------------------\nPython version\n------------------------"
+                echo
+                echo "------------------------"
+                echo "Python version"
+                echo "------------------------"
                 python --version
-                echo "\n------------------------\nPython3 version\n------------------------"
+                echo
+                echo "------------------------"
+                echo "Python3 version"
+                echo "------------------------"
                 python3 --version
             # - name: Agent Info
             #   run: ./.github/scripts/AgentInfo.sh
