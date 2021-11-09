@@ -9,6 +9,9 @@ upgrade_setuptools:
 install: upgrade_setuptools
 	pip install --user --requirement requirements.txt
 
+install_dev: upgrade_setuptools
+	pip install --user --requirement requirements_dev.txt
+
 install_win:
 	pip install --user --requirement requirements.txt
 
