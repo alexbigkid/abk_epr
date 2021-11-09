@@ -63,5 +63,5 @@ jobs:
               if: contains(matrix.os, 'windows')
               run: |
                 set PATH="%PATH%;C:\Users\runneradmin\AppData\Roaming\Python\Python37\Scripts"
-                make install_dev
+                make install_dev_win
                 make test
