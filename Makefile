@@ -15,6 +15,9 @@ install_dev: upgrade_setuptools
 test:
 	python -m unittest discover --start-directory tests
 
+test_ff:
+	python -m unittest discover --start-directory tests --failfast
+
 test_verbose:
 	python -m unittest discover --start-directory tests --verbose
 

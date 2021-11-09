@@ -18,9 +18,14 @@ from _version import __version__
 
 class ExifRename:
     """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
-    _options = None
     _args = None
+    _options = None
     _current_dir = None
+
+    def __init__(self, args=None, options=None, current_dir=None):
+        self._args = args
+        self._options = options
+        self._current_dir = current_dir
 
 
     def handle_options(self) -> None:
@@ -56,19 +61,21 @@ class ExifRename:
             print(f"__version__: {__version__}")
 
 
-    def change_to_image_dir(self) -> None:
+    def move_rename_convert_images(self) -> None:
+        self._change_to_image_dir()
+        self._change_from_image_dir()
+
+
+    def _change_to_image_dir(self) -> None:
         if self._options.dir != ".":
             self._current_dir = getcwd()
             chdir(self._options.dir)
 
 
-    def change_from_image_dir(self) -> None:
+    def _change_from_image_dir(self) -> None:
         if self._current_dir is not None:
             chdir(self._current_dir)
 
-
-    def move_rename_convert_images(self) -> None:
-        pass
 
     def _move_and_rename_files(self) -> None:
         pass
@@ -89,7 +96,6 @@ def main():
 
     try:
         exif_rename.handle_options()
-        exif_rename.change_to_image_dir()
         exif_rename.move_rename_convert_images()
     except Exception as exception:
         print(Fore.RED + f"ERROR: executing exif image renamer")
