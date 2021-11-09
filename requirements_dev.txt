@@ -2,6 +2,8 @@
 -r requirements.txt
 
 # Install test dependencies
+parameterized
+coverage
 black               # code formatting
 flake8              # linting, formatting, analysis
 pytest              # pytest for unit testing
