@@ -62,14 +62,9 @@ jobs:
             - name: Run unit tests (windows-only)
               if: contains(matrix.os, 'windows')
               run: |
-                set PATH="C:\Users\runneradmin\AppData\Roaming\Python\Python37\Scripts;%PATH%"
                 echo "*********** abk PATH *************"
-                echo %PATH%
-                set path="C:\Users\runneradmin\AppData\Roaming\Python\Python37\Scripts;%PATH%"
-                echo "*********** abk path *************"
-                echo %path%
-                echo "*********** abk PYTHONPATH *************"
-                echo %PYTHONPATH%
+                echo "C:\Users\runneradmin\AppData\Roaming\Python\Python37\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+                echo %GITHUB_PATH%
                 echo "*********** abk install_dev_win *************"
                 make install_dev_win
                 echo "*********** abk test *************"
