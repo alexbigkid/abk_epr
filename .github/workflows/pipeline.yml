@@ -63,7 +63,11 @@ jobs:
               if: contains(matrix.os, 'windows')
               run: |
                 set PATH="C:\Users\runneradmin\AppData\Roaming\Python\Python37\Scripts;%PATH%"
-                echo "*********** abk *************"
-                echo %PATH%
+                echo "*********** abk PYTHONPATH *************"
+                echo %PYTHONPATH:;=&echo.%
+                echo "*********** abk PATH *************"
+                echo %path:;=&echo.%
+                echo "*********** abk install_dev_win *************"
                 make install_dev_win
+                echo "*********** abk test *************"
                 make test
