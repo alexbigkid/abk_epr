@@ -50,21 +50,29 @@ jobs:
             - name: Run unit tests (Linux only)
               if: contains(matrix.os, 'ubuntu')
               run: |
-                  export PATH=/home/runner/.local/bin:$PATH
-                  make install_dev
-                  make coverage
+                echo "*********** add to the path *************"
+                # export PATH=/home/runner/.local/bin:$PATH
+                echo "/home/runner/.local/bin" >> $GITHUB_PATH
+                echo "*********** make install_dev *************"
+                make install_dev
+                echo "*********** make coverage *************"
+                make coverage
             - name: Run tests (MacOS-only)
               if: contains(matrix.os, 'macOS')
               run: |
-                export PATH=/Users/runner/Library/Python/3.9/bin:$PATH
+                echo "*********** add to the path *************"
+                # export PATH=/Users/runner/Library/Python/3.9/bin:$PATH
+                echo "/Users/runner/Library/Python/3.9/bin" >> $GITHUB_PATH
+                echo "*********** make install_dev3 *************"
                 make install_dev3
+                echo "*********** make test *************"
                 make test3
             - name: Run unit tests (windows-only)
               if: contains(matrix.os, 'windows')
               run: |
-                echo "*********** abk PATH *************"
+                echo "*********** add to the path *************"
                 echo "C:\Users\runneradmin\AppData\Roaming\Python\Python37\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-                echo %GITHUB_PATH%
+                echo $env:GITHUB_PATH
                 echo "*********** abk install_dev_win *************"
                 make install_dev_win
                 echo "*********** abk test *************"
