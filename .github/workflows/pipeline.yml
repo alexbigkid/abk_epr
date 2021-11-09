@@ -67,6 +67,8 @@ jobs:
                 make install_dev3
                 echo "*********** make test *************"
                 make test3
+                echo "*********** make coverage *************"
+                make coverage
             - name: Run unit tests (windows-only)
               if: contains(matrix.os, 'windows')
               run: |
