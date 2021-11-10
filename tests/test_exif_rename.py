@@ -10,9 +10,11 @@ from context import ExifRename
 
 class TestExifRename(unittest.TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.maxDiff = None
         self.mut = ExifRename()
+        return super().setUp()
+
 
     # -------------------------------------------------------------------------
     # Tests for get_ingredients

@@ -7,7 +7,7 @@ import sys
 
 # Third party imports
 from optparse import OptionParser
-from pydngconverter import DNGConverter, flags
+# from pydngconverter import DNGConverter, flags
 from colorama import Fore, Style
 from os import listdir, system, getcwd, chdir
 from os.path import isfile, isdir, join

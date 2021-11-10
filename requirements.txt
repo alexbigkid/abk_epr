@@ -1,4 +1,3 @@
-MagickWand
 optparse-pretty
 pydngconverter
 pyexiftool
