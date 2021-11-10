@@ -1,4 +1,3 @@
-ImageMagick
 optparse-pretty
 pydngconverter
 pyexiftool

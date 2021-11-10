@@ -77,6 +77,8 @@ jobs:
               run: |
                 echo "*********** current directory *************"
                 dir
+                echo "*********** MAGICK_HOME *************"
+                $env:MAGICK_HOME += ";C:\Users\runneradmin\AppData\Roaming\Python\Python37\Scripts"
                 echo "*********** add to the path *************"
                 $env:Path += ";C:\Users\runneradmin\AppData\Roaming\Python\Python37\Scripts"
                 # echo "C:\Users\runneradmin\AppData\Roaming\Python\Python37\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
