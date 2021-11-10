@@ -63,8 +63,8 @@ jobs:
               shell: bash
               run: |
                 echo "*********** add to the path *************"
-                # export PATH=/Users/runner/Library/Python/3.9/bin:$PATH
-                echo "/Users/runner/Library/Python/3.9/bin" >> $GITHUB_PATH
+                export PATH=/Users/runner/Library/Python/3.9/bin:$PATH
+                # echo "/Users/runner/Library/Python/3.9/bin" >> $GITHUB_PATH
                 echo "*********** make install_dev3 *************"
                 make install_dev3
                 echo "*********** make test *************"
