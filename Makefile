@@ -19,13 +19,13 @@ install_dev_win:
 	pip install --user --requirement requirements_dev.txt
 
 test:
-	python -m unittest discover --start-directory tests
+	python -m unittest discover --start-directory ./tests
 
 test_ff:
-	python -m unittest discover --start-directory tests --failfast
+	python -m unittest discover --start-directory ./tests --failfast
 
 test_verbose:
-	python -m unittest discover --start-directory tests --verbose
+	python -m unittest discover --start-directory ./tests --verbose
 
 exif_rename:
 	python ./src/exif_rename.py
@@ -44,13 +44,13 @@ install_dev3: upgrade_setuptools3
 	pip3 install --user --requirement requirements_dev.txt
 
 test3:
-	python3 -m unittest discover --start-directory tests
+	python3 -m unittest discover --start-directory ./tests
 
-test3:
-	python3 -m unittest discover --start-directory tests --failfast
+test3_ff:
+	python3 -m unittest discover --start-directory ./tests --failfast
 
 test_verbose3:
-	python3 -m unittest discover --start-directory tests --verbose
+	python3 -m unittest discover --start-directory ./tests --verbose
 
 
 # ----------------------------
