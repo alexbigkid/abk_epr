@@ -52,12 +52,16 @@ jobs:
             # - name: Install Tools
             #   run: ./InstallTools.sh
 
+            # - name: run with python 3.8.9
+            #   uses: ./
+            #   with:
+            #     python-version: 3.8.9
+            - name: install dependencies
+              run: make install_dev
             - name: run unit tests
-              uses: ./
-              run: |
-                make install_dev
-                make test
-                make coverage
+              run: make test
+            - name: run coverage
+              run: make coverage
 
 
 
