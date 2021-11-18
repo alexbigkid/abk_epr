@@ -57,9 +57,9 @@ jobs:
             #   with:
             #     python-version: 3.8.9
             - name: install dependencies
-              run: make install_dev
+              run: make install_dev3
             - name: run unit tests
-              run: make test
+              run: make test3
             - name: run coverage
               run: make coverage
 
