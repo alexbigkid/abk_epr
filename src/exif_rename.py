@@ -62,17 +62,16 @@ class ExifRename:
 
 
     def move_rename_convert_images(self) -> None:
-        self._change_to_image_dir()
-        self._change_from_image_dir()
+        pass
 
 
-    def _change_to_image_dir(self) -> None:
+    def change_to_image_dir(self) -> None:
         if self._options.dir != ".":
             self._current_dir = getcwd()
             chdir(self._options.dir)
 
 
-    def _change_from_image_dir(self) -> None:
+    def change_from_image_dir(self) -> None:
         if self._current_dir is not None:
             chdir(self._current_dir)
 
@@ -96,6 +95,7 @@ def main():
 
     try:
         exif_rename.handle_options()
+        exif_rename.change_to_image_dir()
         exif_rename.move_rename_convert_images()
     except Exception as exception:
         print(Fore.RED + f"ERROR: executing exif image renamer")
