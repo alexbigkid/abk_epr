@@ -21,10 +21,9 @@ class ExifRename:
     _options = None
     _current_dir = None
 
-    def __init__(self, options:Values=None, args:list=None, current_dir:str=None):
-        self._args = args
+    def __init__(self, options:Values=None, args:list=None):
         self._options = options
-        self._current_dir = current_dir
+        self._args = args
 
 
     def handle_options(self) -> None:
@@ -92,6 +91,7 @@ class ExifRename:
 
     def _convert_raw_files(self) -> None:
         pass
+
 
     def _read_image_dir(self):
         pass
