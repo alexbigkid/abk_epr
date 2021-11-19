@@ -28,24 +28,23 @@ exif_rename:
 # ----------------------------
 # if python3 is defined
 # ----------------------------
-upgrade_setuptools3:
-	pip3 install --upgrade setuptools
+upgrade_setup_github:
+	pip install --upgrade setuptools
 
-install3: upgrade_setuptools3
-	pip3 install --user --requirement requirements.txt
+install_github: upgrade_setup_github
+	pip install --requirement requirements.txt
 
-install_dev3: upgrade_setuptools3
-	pip3 install --user --requirement requirements_dev.txt
+install_github_dev: upgrade_setup_github
+	pip install --requirement requirements_dev.txt
 
-test3:
-	python3 -m unittest discover --start-directory tests
+# test_github:
+# 	python3 -m unittest discover --start-directory tests
 
-test3_ff:
-	python3 -m unittest discover --start-directory tests --failfast
+# test_github_ff:
+# 	python3 -m unittest discover --start-directory tests --failfast
 
-test_verbose3:
-	python3 -m unittest discover --start-directory tests --verbose
-
+# test_github_verbose:
+# 	python -m unittest discover --start-directory tests --verbose
 
 # ----------------------------
 # those rules should be universal
