@@ -2,15 +2,14 @@
 """Main program for renaming images and translate images from raw to dng format"""
 
 # Standard library imports
+import os
 import sys
 # import asyncio
 
 # Third party imports
-from optparse import OptionParser
+from optparse import OptionParser, Values
 # from pydngconverter import DNGConverter, flags
 from colorama import Fore, Style
-from os import listdir, system, getcwd, chdir
-from os.path import isfile, isdir, join
 # import exiftool
 
 # Local application imports
@@ -22,7 +21,7 @@ class ExifRename:
     _options = None
     _current_dir = None
 
-    def __init__(self, args=None, options=None, current_dir=None):
+    def __init__(self, options:Values=None, args:list=None, current_dir:str=None):
         self._args = args
         self._options = options
         self._current_dir = current_dir
@@ -62,18 +61,29 @@ class ExifRename:
 
 
     def move_rename_convert_images(self) -> None:
-        pass
+        self._change_to_image_dir()
+        self._change_from_image_dir()
 
 
-    def change_to_image_dir(self) -> None:
+    def return_to_previous_state(self):
+        self._change_from_image_dir()
+
+
+    def _change_to_image_dir(self) -> None:
         if self._options.dir != ".":
-            self._current_dir = getcwd()
-            chdir(self._options.dir)
+            self._current_dir = os.getcwd()
+            os.chdir(self._options.dir)
+            if self._options.verbose:
+                print(f"1. inside directory: {self._options.dir}")
+                print(f"1. list dir: {os.listdir()}")
 
 
-    def change_from_image_dir(self) -> None:
+    def _change_from_image_dir(self) -> None:
         if self._current_dir is not None:
-            chdir(self._current_dir)
+            os.chdir(self._current_dir)
+            if self._options.verbose:
+                print(f"2. inside directory: {self._current_dir}")
+                print(f"2. list dir: {os.listdir()}")
 
 
     def _move_and_rename_files(self) -> None:
@@ -95,14 +105,13 @@ def main():
 
     try:
         exif_rename.handle_options()
-        exif_rename.change_to_image_dir()
         exif_rename.move_rename_convert_images()
     except Exception as exception:
+        exif_rename.return_to_previous_state()
         print(Fore.RED + f"ERROR: executing exif image renamer")
         print(f"EXCEPTION: {exception}{Style.RESET_ALL}")
         exit_code = 1
     finally:
-        exif_rename.change_from_image_dir()
         sys.exit(exit_code)
 
 
