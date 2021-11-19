@@ -7,10 +7,10 @@ upgrade_setuptools:
 	pip install --upgrade setuptools
 
 install: upgrade_setuptools
-	pip install --user --requirement requirements.txt
+	pip install --requirement requirements.txt
 
 install_dev: upgrade_setuptools
-	pip install --user --requirement requirements_dev.txt
+	pip install --requirement requirements_dev.txt
 
 test:
 	python -m unittest discover --start-directory tests
@@ -24,27 +24,11 @@ test_verbose:
 exif_rename:
 	python ./src/exif_rename.py -d ./data/sony_raw -v
 
+install_user: upgrade_setup
+	pip install --user --requirement requirements.txt
 
-# ----------------------------
-# if python3 is defined
-# ----------------------------
-upgrade_setup_github:
-	pip install --upgrade setuptools
-
-install_github: upgrade_setup_github
-	pip install --requirement requirements.txt
-
-install_github_dev: upgrade_setup_github
-	pip install --requirement requirements_dev.txt
-
-# test_github:
-# 	python3 -m unittest discover --start-directory tests
-
-# test_github_ff:
-# 	python3 -m unittest discover --start-directory tests --failfast
-
-# test_github_verbose:
-# 	python -m unittest discover --start-directory tests --verbose
+install_user_dev: upgrade_setup
+	pip install --user --requirement requirements_dev.txt
 
 # ----------------------------
 # those rules should be universal
