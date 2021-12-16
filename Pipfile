@@ -4,14 +4,15 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-coverage = "*"
 optparse-pretty = "*"
 pydngconverter = "*"
-parameterized = "*"
-flake8 = "*"
 PyExifTool = "*"
+pyyaml = "*"
 
 [dev-packages]
+coverage = "*"
+parameterized = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.8"

@@ -4,27 +4,46 @@
 # Standard library imports
 import os
 import sys
+import logging
+# import logging.handlers
+import logging.config
+import yaml
 # import asyncio
 
 # Third party imports
 from optparse import OptionParser, Values
 # from pydngconverter import DNGConverter, flags
 from colorama import Fore, Style
+from yaml.loader import Loader
 # import exiftool
 
 # Local application imports
 from _version import __version__
+
+
+# LOG_CONFIG_FILE = './src/logging.conf'
+CONSOLE_LOGGER = 'consoleLogger'
+FILE_LOGGER = 'fileLogger'
+
+class CommandLineOptions:
+    """CommandLineOptions module handles all parameters passed in to the python script"""
+
 
 class ExifRename:
     """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
     _args = None
     _options = None
     _current_dir = None
+    _logger = None
 
     def __init__(self, options:Values=None, args:list=None):
         self._options = options
         self._args = args
 
+    def __del__(self):
+        pass
+        # if self._options.verbose:
+        #     self._logger.
 
     def handle_options(self) -> None:
         """Handles user specified options and arguments"""
@@ -47,20 +66,54 @@ class ExifRename:
             default=False,
             help="verbose execution"
         )
+        parser.add_option(
+            "-l",
+            "--log_into_file",
+            action="store_true",
+            dest="log_into_file",
+            default=False,
+            help="log into file exif_rename.log, if True, otherwise log into console"
+        )
+        parser.add_option(
+            "-c",
+            "--config_log_file",
+            action="store",
+            dest="config_log_file",
+            default="./src/logging.yaml",
+            help="config file for logging print outs"
+        )
         (self._options, self._args) = parser.parse_args()
 
         if len(self._args) != 0:
             parser.error("wrong number of arguments")
+        self._setup_logging()
+        self._logger.info(f"options: {self._options}")
+        self._logger.info(f"args: {self._args}")
+        self._logger.info(f"options.dir: {self._options.dir}")
+        self._logger.info(f"options.verbose: {self._options.verbose}")
+        self._logger.info(f"options.log_into_file: {self._options.log_into_file}")
+        self._logger.info(f"__version__: {__version__}")
 
-        if self._options.verbose:
-            print(f"options: {self._options}")
-            print(f"args: {self._args}")
-            print(f"options.dir: {self._options.dir}")
-            print(f"__version__: {__version__}")
+
+    def _setup_logging(self) -> None:
+        try:
+            with open(self._options.config_log_file, 'r') as stream:
+                try:
+                    config_yaml = yaml.load(stream, Loader=yaml.FullLoader)
+                except ValueError:
+                    raise ValueError(f'{self._options.config_log_file} is not a valid yaml format')
+        except IOError:
+            raise IOError(f'{self._options.config_log_file} does not exist.')
+        logging.config.dictConfig(config_yaml)
+        logger_type = FILE_LOGGER if self._options.log_into_file else CONSOLE_LOGGER
+        self._logger = logging.getLogger(logger_type)
+        self._logger.disabled = self._options.verbose == False
+        self._logger.debug(f"logger_type: {logger_type}")
 
 
     def move_rename_convert_images(self) -> None:
         self._change_to_image_dir()
+        self._read_image_dir()
         self._change_from_image_dir()
 
 
@@ -72,17 +125,15 @@ class ExifRename:
         if self._options.dir != ".":
             self._current_dir = os.getcwd()
             os.chdir(self._options.dir)
-            if self._options.verbose:
-                print(f"1. inside directory: {self._options.dir}")
-                print(f"1. list dir: {os.listdir()}")
+            self._logger.info(f"inside directory: {self._options.dir}")
+            self._logger.info(f"list dir: {os.listdir()}")
 
 
     def _change_from_image_dir(self) -> None:
         if self._current_dir is not None:
             os.chdir(self._current_dir)
-            if self._options.verbose:
-                print(f"2. inside directory: {self._current_dir}")
-                print(f"2. list dir: {os.listdir()}")
+            self._logger.info(f"inside directory: {self._current_dir}")
+            self._logger.info(f"list dir: {os.listdir()}")
 
 
     def _move_and_rename_files(self) -> None:
@@ -96,6 +147,17 @@ class ExifRename:
     def _read_image_dir(self):
         pass
         # onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+
+
+    def _validate_image_dir(self):
+        pass
+        # $cur_dir =~ /^\d{4}(\d{2})(\d{2})_\w+$/;
+        # $month = $1;
+        # $day   = $2;
+
+        # die "wrong month $month\n" if(defined($month) && $month > 12);
+        # die "wrong day $day\n" if(defined($day) && $day > 31);
+
 
 
 

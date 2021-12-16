@@ -1,16 +1,31 @@
 .PHONY:	upgrade_setuptools install install_dev test test_verbose exif_rename exif_rename3 settings help
-.SILENT: exif_rename exif_rename3 coverage
+.SILENT: exif_rename exif_rename3 coverage clean
 
 # python is sometimes linked to python v2 and sometimes to python v3
 # So to make sure make rules work on other computers 2nd set of rules are created
 upgrade_setuptools:
 	pip install --upgrade setuptools
 
+upgrade_setuptools_venv:
+	pipenv install --upgrade setuptools
+
 install: upgrade_setuptools
 	pip install --requirement requirements.txt
 
+install_user: upgrade_setup
+	pip install --user --requirement requirements.txt
+
+install_venv: upgrade_setuptools_venv
+	pipenv install --requirement requirements.txt
+
 install_dev: upgrade_setuptools
 	pip install --requirement requirements_dev.txt
+
+install_dev_user: upgrade_setup
+	pip install --user --requirement requirements_dev.txt
+
+install_dev_venv: upgrade_setuptools_venv
+	pipenv install --requirement requirements_dev.txt
 
 test:
 	python -m unittest discover --start-directory tests
@@ -22,13 +37,13 @@ test_verbose:
 	python -m unittest discover --start-directory tests --verbose
 
 exif_rename:
-	python ./src/exif_rename.py -d ./data/sony_raw -v
+	python ./src/exif_rename.py -d ./data/sony_raw -c ./src/logging.yaml -v
 
-install_user: upgrade_setup
-	pip install --user --requirement requirements.txt
-
-install_user_dev: upgrade_setup
-	pip install --user --requirement requirements_dev.txt
+clean:
+	@echo "deleting log files:"
+	@echo "___________________"
+	ls -la *.log*
+	rm *.log*
 
 # ----------------------------
 # those rules should be universal
@@ -46,13 +61,17 @@ settings:
 
 help:
 	@echo "Targets:"
-	@echo "-----------------------------------------------------------------------------"
-	@echo "  exif_rename  - executes the main program"
-	@echo "  install      - installs required packages"
-	@echo "  install_dev  - installs required development packages"
-	@echo "  test         - runs test"
-	@echo "  test_verbose - runs test with verbose messaging"
-	@echo "-----------------------------------------------------------------------------"
-	@echo "  coverage     - runs test, produces coverage and displays it"
-	@echo "  settings     - outputs current settings"
-	@echo "  help         - outputs this info"
+	@echo "--------------------------------------------------------------------------------"
+	@echo "  exif_rename        - executes the main program"
+	@echo "  install            - installs required packages"
+	@echo "  install_user       - installs required packages in user's dir"
+	@echo "  install_venv       - installs required packages in virtual env dir"
+	@echo "  install_dev        - installs required development packages"
+	@echo "  install_dev_user   - installs required development packages in user's dir"
+	@echo "  install_dev_venv   - installs required development packages in virtual env dir"
+	@echo "  test               - runs test"
+	@echo "  test_verbose       - runs test with verbose messaging"
+	@echo "--------------------------------------------------------------------------------"
+	@echo "  coverage           - runs test, produces coverage and displays it"
+	@echo "  settings           - outputs current settings"
+	@echo "  help               - outputs this info"
