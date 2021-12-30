@@ -4,13 +4,13 @@
 import unittest
 import logging
 import logging.config
-from unittest.mock import patch, call
+from unittest.mock import mock_open, patch, call
 
 # Third party imports
 from optparse import OptionParser, Values
 
 # Local application imports
-from context import ExifRename
+from context import CommandLineOptions, ExifRename
 
 class TestExifRename(unittest.TestCase):
     TEST_IMAGE_DIR = './unittest_image_dir'
@@ -23,18 +23,29 @@ class TestExifRename(unittest.TestCase):
         values.dir = self.TEST_IMAGE_DIR
         values.verbose = False
         values.log_into_file = False
-        self.mut = ExifRename(options=values)
+        self.clo = CommandLineOptions(options=values)
+        # self.mut = ExifRename(logging=self.clo.logging, options=self.clo.options)
         return super().setUp()
 
 
     # -------------------------------------------------------------------------
     # Tests for get_ingredients
     # -------------------------------------------------------------------------
-    def test_ExifRename__setup_logger_throws_given_yaml_config_file_does_not_exist(self):
+    def test_CommandLineOptions__setup_logger_throws_given_yaml_config_file_does_not_exist(self):
         with self.assertRaises(IOError) as context:
-            self.mut._options.config_log_file = 'NotValidFile.yaml'
-            self.mut._setup_logging()
+            self.clo.options.config_log_file = 'NotValidFile.yaml'
+            self.clo._setup_logging()
         self.assertEqual('NotValidFile.yaml does not exist.', str(context.exception))
+
+
+    def test_CommandLineOptions__setup_logger_throws_given_invalid_yaml_file(self):
+        with patch("builtins.open", mock_open(read_data='{"notValid": 2}')) as mock_file:
+            with self.assertRaises(ValueError) as context:
+                self.clo.options.config_log_file = 'valid.yaml'
+                self.clo._setup_logging()
+            self.assertEqual('valid.yaml is not a valid yaml format', str(context.exception))
+            mock_file.assert_called_with('valid.yaml', 'r')
+            self.assertEqual(self.clo.logger, None)
 
 
     # def test_ExifRename_changes_into_image_directory_and_back(self):

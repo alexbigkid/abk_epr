@@ -27,23 +27,15 @@ FILE_LOGGER = 'fileLogger'
 
 class CommandLineOptions:
     """CommandLineOptions module handles all parameters passed in to the python script"""
+    # _args = None
+    # _options = None
+    # logger = None
 
-
-class ExifRename:
-    """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
-    _args = None
-    _options = None
-    _current_dir = None
-    _logger = None
-
-    def __init__(self, options:Values=None, args:list=None):
-        self._options = options
+    def __init__(self, args:list=None, options:Values=None):
         self._args = args
+        self.logger = None
+        self.options = options
 
-    def __del__(self):
-        pass
-        # if self._options.verbose:
-        #     self._logger.
 
     def handle_options(self) -> None:
         """Handles user specified options and arguments"""
@@ -82,33 +74,52 @@ class ExifRename:
             default="./src/logging.yaml",
             help="config file for logging print outs"
         )
-        (self._options, self._args) = parser.parse_args()
+        (self.options, self._args) = parser.parse_args()
 
         if len(self._args) != 0:
             parser.error("wrong number of arguments")
         self._setup_logging()
-        self._logger.info(f"options: {self._options}")
-        self._logger.info(f"args: {self._args}")
-        self._logger.info(f"options.dir: {self._options.dir}")
-        self._logger.info(f"options.verbose: {self._options.verbose}")
-        self._logger.info(f"options.log_into_file: {self._options.log_into_file}")
-        self._logger.info(f"__version__: {__version__}")
+        self.logger.info(f"options: {self.options}")
+        self.logger.info(f"args: {self._args}")
+        self.logger.info(f"options.dir: {self.options.dir}")
+        self.logger.info(f"options.verbose: {self.options.verbose}")
+        self.logger.info(f"options.log_into_file: {self.options.log_into_file}")
+        self.logger.info(f"__version__: {__version__}")
 
 
     def _setup_logging(self) -> None:
         try:
-            with open(self._options.config_log_file, 'r') as stream:
+            with open(self.options.config_log_file, 'r') as stream:
                 try:
                     config_yaml = yaml.load(stream, Loader=yaml.FullLoader)
+                    logging.config.dictConfig(config_yaml)
+                    logger_type = FILE_LOGGER if self.options.log_into_file else CONSOLE_LOGGER
+                    self.logger = logging.getLogger(logger_type)
+                    self.logger.disabled = self.options.verbose == False
                 except ValueError:
-                    raise ValueError(f'{self._options.config_log_file} is not a valid yaml format')
+                    raise ValueError(f'{self.options.config_log_file} is not a valid yaml format')
+                except Exception:
+                    raise Exception(f'abk')
         except IOError:
-            raise IOError(f'{self._options.config_log_file} does not exist.')
-        logging.config.dictConfig(config_yaml)
-        logger_type = FILE_LOGGER if self._options.log_into_file else CONSOLE_LOGGER
-        self._logger = logging.getLogger(logger_type)
-        self._logger.disabled = self._options.verbose == False
-        self._logger.debug(f"logger_type: {logger_type}")
+            raise IOError(f'{self.options.config_log_file} does not exist.')
+        self.logger.debug(f"logger_type: {logger_type}")
+
+
+
+class ExifRename:
+    """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
+    _current_dir = None
+    _logger = None
+    _options = None
+
+    def __init__(self, logger:logging.Logger=None, options:Values=None):
+        self._logger = logger
+        self._options = options
+
+    def __del__(self):
+        pass
+        # if self._options.verbose:
+        #     self._logger.
 
 
     def move_rename_convert_images(self) -> None:
@@ -163,10 +174,11 @@ class ExifRename:
 
 def main():
     exit_code = 0
-    exif_rename = ExifRename()
 
     try:
-        exif_rename.handle_options()
+        command_line_options = CommandLineOptions()
+        command_line_options.handle_options()
+        exif_rename = ExifRename(logger=command_line_options.logger, options=command_line_options.options)
         exif_rename.move_rename_convert_images()
     except Exception as exception:
         exif_rename.return_to_previous_state()
