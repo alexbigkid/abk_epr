@@ -21,20 +21,19 @@ from yaml.loader import Loader
 from _version import __version__
 
 
-# LOG_CONFIG_FILE = './src/logging.conf'
 CONSOLE_LOGGER = 'consoleLogger'
 FILE_LOGGER = 'fileLogger'
 
 class CommandLineOptions:
     """CommandLineOptions module handles all parameters passed in to the python script"""
-    # _args = None
-    # _options = None
-    # logger = None
+    _args = None
+    options = None
+    logger = None
 
     def __init__(self, args:list=None, options:Values=None):
         self._args = args
-        self.logger = None
         self.options = options
+        self.logger = None
 
 
     def handle_options(self) -> None:
@@ -98,8 +97,8 @@ class CommandLineOptions:
                     self.logger.disabled = self.options.verbose == False
                 except ValueError:
                     raise ValueError(f'{self.options.config_log_file} is not a valid yaml format')
-                except Exception:
-                    raise Exception(f'abk')
+                except Exception as ex:
+                    raise Exception(f'not ValueError: {ex.exeption}')
         except IOError:
             raise IOError(f'{self.options.config_log_file} does not exist.')
         self.logger.debug(f"logger_type: {logger_type}")
@@ -108,13 +107,11 @@ class CommandLineOptions:
 
 class ExifRename:
     """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
-    _current_dir = None
-    _logger = None
-    _options = None
 
     def __init__(self, logger:logging.Logger=None, options:Values=None):
         self._logger = logger
         self._options = options
+        self._current_dir = None
 
     def __del__(self):
         pass
@@ -137,14 +134,12 @@ class ExifRename:
             self._current_dir = os.getcwd()
             os.chdir(self._options.dir)
             self._logger.info(f"inside directory: {self._options.dir}")
-            self._logger.info(f"list dir: {os.listdir()}")
 
 
     def _change_from_image_dir(self) -> None:
         if self._current_dir is not None:
             os.chdir(self._current_dir)
             self._logger.info(f"inside directory: {self._current_dir}")
-            self._logger.info(f"list dir: {os.listdir()}")
 
 
     def _move_and_rename_files(self) -> None:
@@ -155,9 +150,9 @@ class ExifRename:
         pass
 
 
-    def _read_image_dir(self):
-        pass
-        # onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+    def _read_image_dir(self) -> None:
+        onlyfiles = [f for f in os.listdir('.') if os.path.isfile(f)]
+        self._logger.debug(f"only_files = {onlyfiles}")
 
 
     def _validate_image_dir(self):

@@ -16,6 +16,27 @@ class TestExifRename(unittest.TestCase):
     TEST_IMAGE_DIR = './unittest_image_dir'
     TEST_CURRENT_DIR = './unittest_current_dir'
     _current_dir = None
+    yaml_file = """version: 1
+disable_existing_loggers: True
+formatters:
+    abkFormatterShort:
+        format: '[%(asctime)s]:[%(funcName)s]:[%(levelname)s]: %(message)s'
+        datefmt: '%Y%m%d %H:%M:%S'
+handlers:
+    consoleHandler:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: abkFormatterShort
+        stream: ext://sys.stdout
+loggers:
+    consoleLogger:
+        level: DEBUG
+        handlers: [consoleHandler]
+        qualname: consoleLogger
+        propagate: no
+"""
+    mut = None
+
 
     def setUp(self) -> None:
         self.maxDiff = None
@@ -24,9 +45,7 @@ class TestExifRename(unittest.TestCase):
         values.verbose = False
         values.log_into_file = False
         self.clo = CommandLineOptions(options=values)
-        # self.mut = ExifRename(logging=self.clo.logging, options=self.clo.options)
         return super().setUp()
-
 
     # -------------------------------------------------------------------------
     # Tests for get_ingredients
@@ -48,18 +67,54 @@ class TestExifRename(unittest.TestCase):
             self.assertEqual(self.clo.logger, None)
 
 
-    # def test_ExifRename_changes_into_image_directory_and_back(self):
-    #     # logger = logging.getLogger(ExifRename.LOG_CONFIG_FILE)
-    #     with patch.object(logging.config, 'getLogger') as mock_getLogger:
-    #         with patch.object(logging, 'debug') as mock_logging_debug:
-    #             self.mut.handle_options()
-    #             self.assertEqual(mock_getLogger.mock_calls, [call(ExifRename.LOG_CONFIG_FILE)])
-    #             self.assertEqual(mock_logging_debug.mock_calls, [call("logger_type: consoleLogger")])
-    #         # with patch('os.getcwd', return_value=self.TEST_CURRENT_DIR) as mock_getcwd:
-    #         #     with patch('os.chdir') as mock_chdir:
-    #         #         self.mut.move_rename_convert_images()
-    #         #         self.assertEqual(mock_getcwd.mock_calls, [call()])
-    #         #         self.assertEqual(mock_chdir.mock_calls, [call(self.TEST_IMAGE_DIR), call(self.TEST_CURRENT_DIR)])
+    def test_ExifRename__move_rename_convert_images_throws_given_image_dir_does_not_exist(self):
+        with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
+            self.clo.options.config_log_file = 'valid.yaml'
+            self.clo._setup_logging()
+            mock_file.assert_called_with('valid.yaml', 'r')
+            self.mut = ExifRename(logger=self.clo.logger, options=self.clo.options)
+            with patch('os.getcwd', return_value=self.TEST_CURRENT_DIR) as mock_getcwd:
+                with patch('os.chdir', side_effect=Exception(f"No such file or directory: '{self.TEST_IMAGE_DIR}'")) as mock_chdir:
+                    with self.assertRaises(Exception) as context:
+                        self.mut.move_rename_convert_images()
+                    self.assertEqual(f"No such file or directory: '{self.TEST_IMAGE_DIR}'", str(context.exception))
+                self.assertEqual(mock_chdir.mock_calls, [call(self.TEST_IMAGE_DIR)])
+            self.assertEqual(mock_getcwd.mock_calls, [call()])
+
+
+    def test_ExifRename__move_rename_convert_images_does_not_change_dir_given_it_is_current_dir(self):
+        with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
+            self.clo.options.config_log_file = 'valid.yaml'
+            self.clo.options.dir = '.'
+            self.clo._setup_logging()
+            mock_file.assert_called_with('valid.yaml', 'r')
+            self.mut = ExifRename(logger=self.clo.logger, options=self.clo.options)
+            with patch('os.getcwd', return_value=self.TEST_CURRENT_DIR) as mock_getcwd:
+                with patch('os.chdir') as mock_chdir:
+                    files_to_return = ['a.json', 'b.json', 'c.json', 'd.txt']
+                    with patch('os.listdir', return_value=files_to_return) as mock_listdir:
+                        self.mut.move_rename_convert_images()
+                    self.assertEqual(mock_listdir.mock_calls, [call('.')])
+                self.assertEqual(mock_chdir.mock_calls, [])
+            self.assertEqual(mock_getcwd.mock_calls, [])
+
+
+    def test_ExifRename__move_rename_convert_images_calls_get_change_list_dir(self):
+        with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
+            self.clo.options.config_log_file = 'valid.yaml'
+            self.clo._setup_logging()
+            mock_file.assert_called_with('valid.yaml', 'r')
+            self.mut = ExifRename(logger=self.clo.logger, options=self.clo.options)
+            with patch('os.getcwd', return_value=self.TEST_CURRENT_DIR) as mock_getcwd:
+                with patch('os.chdir') as mock_chdir:
+                    files_to_return = ['a.json', 'b.json']
+                    with patch('os.listdir', return_value=files_to_return) as mock_listdir:
+                        with patch('os.path.isfile', return_value=True) as mock_isfile:
+                            self.mut.move_rename_convert_images()
+                        self.assertEqual(mock_isfile.mock_calls, [call(files_to_return[0]), call(files_to_return[1])])
+                    self.assertEqual(mock_listdir.mock_calls, [call('.')])
+                self.assertEqual(mock_chdir.mock_calls, [call(self.TEST_IMAGE_DIR), call(self.TEST_CURRENT_DIR)])
+            self.assertEqual(mock_getcwd.mock_calls, [call()])
 
 
 if __name__ == '__main__':
