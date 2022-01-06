@@ -2,3 +2,4 @@ optparse-pretty
 pydngconverter
 pyexiftool
 pyyaml
+colorama

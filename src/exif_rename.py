@@ -8,6 +8,7 @@ import logging
 # import logging.handlers
 import logging.config
 import yaml
+import re
 # import asyncio
 
 # Third party imports
@@ -15,6 +16,7 @@ from optparse import OptionParser, Values
 # from pydngconverter import DNGConverter, flags
 from colorama import Fore, Style
 from yaml.loader import Loader
+from colorama import Fore, Style
 # import exiftool
 
 # Local application imports
@@ -122,65 +124,79 @@ class ExifRename:
 
 
     def move_rename_convert_images(self) -> None:
-        self._logger.debug(f"-> move_rename_convert_images")
+        self._function_log("move_rename_convert_images", True)
+        self._validate_image_dir()
         self._change_to_image_dir()
         self._read_image_dir()
         self._change_from_image_dir()
-        self._logger.debug(f"<- move_rename_convert_images")
+        self._function_log("move_rename_convert_images", False)
 
 
     def return_to_previous_state(self):
-        self._logger.debug(f"-> return_to_previous_state")
+        self._function_log("return_to_previous_state", True)
         self._change_from_image_dir()
-        self._logger.debug(f"<- return_to_previous_state")
+        self._function_log("return_to_previous_state", False)
 
 
     def _change_to_image_dir(self) -> None:
-        self._logger.debug(f"-> _change_to_image_dir")
+        self._function_log("_change_to_image_dir", True)
         if self._options.dir != ".":
             self._current_dir = os.getcwd()
             os.chdir(self._options.dir)
             self._logger.info(f"inside directory: {self._options.dir}")
-        self._logger.debug(f"<- _change_to_image_dir")
+        self._function_log("_change_to_image_dir", False)
 
 
     def _change_from_image_dir(self) -> None:
-        self._logger.debug(f"-> _change_from_image_dir")
+        self._function_log("_change_from_image_dir", True)
         if self._current_dir is not None:
             os.chdir(self._current_dir)
             self._logger.info(f"inside directory: {self._current_dir}")
-        self._logger.debug(f"<- _change_from_image_dir")
+        self._function_log("_change_from_image_dir", False)
 
 
     def _move_and_rename_files(self) -> None:
-        self._logger.debug(f"-> _move_and_rename_files")
+        self._function_log("_move_and_rename_files", True)
         pass
-        self._logger.debug(f"<- _move_and_rename_files")
+        self._function_log("_move_and_rename_files", False)
 
 
     def _convert_raw_files(self) -> None:
-        self._logger.debug(f"-> _convert_raw_files")
+        self._function_log("_convert_raw_files", True)
         pass
-        self._logger.debug(f"<- _convert_raw_files")
+        self._function_log("_convert_raw_files", False)
 
 
     def _read_image_dir(self) -> None:
+        self._function_log("_read_image_dir", True)
         self._logger.debug(f"<- _read_image_dir")
         onlyfiles = [f for f in os.listdir('.') if os.path.isfile(f)]
         self._logger.debug(f"only_files = {onlyfiles}")
-        self._logger.debug(f"<- _read_image_dir")
+        self._function_log("_read_image_dir", False)
 
 
     def _validate_image_dir(self):
-        self._logger.debug(f"-> _validate_image_dir")
-        pass
-        self._logger.debug(f"<- _validate_image_dir")
+        self._function_log("validate_image_dir", True)
+        self._logger.debug(f"self._options.dir: {self._options.dir}")
+        ymd_pattern = re.compile(r"(\d{4})(\d{2})(\d{2})_\w+$")
+        d = re.fullmatch(ymd_pattern, self._options.dir)
+        self._logger.debug(f"d for date: {d}")
+        if d:
+            year    = d.group(1)
+            month   = d.group(2)
+            day     = d.group(3)
+            self._logger.debug(f"year: {year}, month: {month}, day: {day}")
+        # else:
+        #     raise Exception("Not a valid directory format, please use: YYYYMMDD_name_of_the_project")
+        self._function_log("validate_image_dir", False)
         # $cur_dir =~ /^\d{4}(\d{2})(\d{2})_\w+$/;
         # $month = $1;
         # $day   = $2;
-
         # die "wrong month $month\n" if(defined($month) && $month > 12);
         # die "wrong day $day\n" if(defined($day) && $day > 31);
+
+    def _function_log(self, function_name:str, entering:bool):
+        self._logger.debug(Fore.CYAN + f"{('<-', '->')[entering]} {function_name}" + Fore.RESET)
 
 
 
