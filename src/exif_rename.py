@@ -107,6 +107,8 @@ class CommandLineOptions:
 
 class ExifRename:
     """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
+    FILES_TO_EXCLUDE  = {'Adobe Bridge Cache', 'Thumbs.db'}
+
 
     def __init__(self, logger:logging.Logger=None, options:Values=None):
         self._logger = logger
@@ -120,43 +122,59 @@ class ExifRename:
 
 
     def move_rename_convert_images(self) -> None:
+        self._logger.debug(f"-> move_rename_convert_images")
         self._change_to_image_dir()
         self._read_image_dir()
         self._change_from_image_dir()
+        self._logger.debug(f"<- move_rename_convert_images")
 
 
     def return_to_previous_state(self):
+        self._logger.debug(f"-> return_to_previous_state")
         self._change_from_image_dir()
+        self._logger.debug(f"<- return_to_previous_state")
 
 
     def _change_to_image_dir(self) -> None:
+        self._logger.debug(f"-> _change_to_image_dir")
         if self._options.dir != ".":
             self._current_dir = os.getcwd()
             os.chdir(self._options.dir)
             self._logger.info(f"inside directory: {self._options.dir}")
+        self._logger.debug(f"<- _change_to_image_dir")
 
 
     def _change_from_image_dir(self) -> None:
+        self._logger.debug(f"-> _change_from_image_dir")
         if self._current_dir is not None:
             os.chdir(self._current_dir)
             self._logger.info(f"inside directory: {self._current_dir}")
+        self._logger.debug(f"<- _change_from_image_dir")
 
 
     def _move_and_rename_files(self) -> None:
+        self._logger.debug(f"-> _move_and_rename_files")
         pass
+        self._logger.debug(f"<- _move_and_rename_files")
 
 
     def _convert_raw_files(self) -> None:
+        self._logger.debug(f"-> _convert_raw_files")
         pass
+        self._logger.debug(f"<- _convert_raw_files")
 
 
     def _read_image_dir(self) -> None:
+        self._logger.debug(f"<- _read_image_dir")
         onlyfiles = [f for f in os.listdir('.') if os.path.isfile(f)]
         self._logger.debug(f"only_files = {onlyfiles}")
+        self._logger.debug(f"<- _read_image_dir")
 
 
     def _validate_image_dir(self):
+        self._logger.debug(f"-> _validate_image_dir")
         pass
+        self._logger.debug(f"<- _validate_image_dir")
         # $cur_dir =~ /^\d{4}(\d{2})(\d{2})_\w+$/;
         # $month = $1;
         # $day   = $2;
