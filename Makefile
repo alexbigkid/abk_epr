@@ -37,7 +37,7 @@ test_verbose:
 	python -m unittest discover --start-directory tests --verbose
 
 exif_rename:
-	python ./src/exif_rename.py -d ./data/sony_raw -c ./src/logging.yaml -v
+	python ./src/exif_rename.py -d ./data/20220101_sony_raw -c ./src/logging.yaml -v
 
 clean:
 	@echo "deleting log files:"

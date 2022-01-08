@@ -9,6 +9,7 @@ import logging
 import logging.config
 import yaml
 import re
+import datetime
 # import asyncio
 
 # Third party imports
@@ -178,22 +179,15 @@ class ExifRename:
     def _validate_image_dir(self):
         self._function_log("validate_image_dir", True)
         self._logger.debug(f"self._options.dir: {self._options.dir}")
-        ymd_pattern = re.compile(r"(\d{4})(\d{2})(\d{2})_\w+$")
-        d = re.fullmatch(ymd_pattern, self._options.dir)
-        self._logger.debug(f"d for date: {d}")
-        if d:
-            year    = d.group(1)
-            month   = d.group(2)
-            day     = d.group(3)
-            self._logger.debug(f"year: {year}, month: {month}, day: {day}")
-        # else:
-        #     raise Exception("Not a valid directory format, please use: YYYYMMDD_name_of_the_project")
+        try:
+            dir_name_to_validate = (self._options.dir, os.getcwd())[self._options.dir == '.']
+            last_part_of_dir = os.path.basename(os.path.normpath(dir_name_to_validate))
+            date_format = re.match('^(\d{8})_\w+$', last_part_of_dir)
+            datetime.datetime.strptime(date_format.group(1), '%Y%m%d')
+        except:
+            raise Exception("Not a valid date / directory format, please use: YYYYMMDD_name_of_the_project")
         self._function_log("validate_image_dir", False)
-        # $cur_dir =~ /^\d{4}(\d{2})(\d{2})_\w+$/;
-        # $month = $1;
-        # $day   = $2;
-        # die "wrong month $month\n" if(defined($month) && $month > 12);
-        # die "wrong day $day\n" if(defined($day) && $day > 31);
+
 
     def _function_log(self, function_name:str, entering:bool):
         self._logger.debug(Fore.CYAN + f"{('<-', '->')[entering]} {function_name}" + Fore.RESET)
