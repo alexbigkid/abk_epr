@@ -40,5 +40,7 @@ jobs:
               run: make install_dev
             - name: run unit tests
               run: make test_ff
+            # coverage has a problem with windows so not running it if windows OS
             - name: run coverage
+              if: "!contains(matrix.os, 'windows')"
               run: make coverage
