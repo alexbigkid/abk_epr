@@ -1,5 +1,5 @@
 optparse-pretty
 pydngconverter
-pyexiftool
+PyExifTool
 PyYAML
 colorama
