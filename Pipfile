@@ -7,9 +7,12 @@ name = "pypi"
 optparse-pretty = "*"
 pydngconverter = "*"
 PyExifTool = "*"
-pyyaml = "*"
+PyYAML = "*"
+setuptools = "*"
+colorama = "*"
 
 [dev-packages]
+setuptools = "*"
 coverage = "*"
 parameterized = "*"
 flake8 = "*"
