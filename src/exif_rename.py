@@ -95,7 +95,7 @@ class CommandLineOptions:
                 try:
                     config_yaml = yaml.load(stream, Loader=yaml.FullLoader)
                     logging.config.dictConfig(config_yaml)
-                    logger_type = FILE_LOGGER if self.options.log_into_file else CONSOLE_LOGGER
+                    logger_type = (CONSOLE_LOGGER, FILE_LOGGER)[self.options.log_into_file]
                     self.logger = logging.getLogger(logger_type)
                     self.logger.disabled = self.options.verbose == False
                 except ValueError:
