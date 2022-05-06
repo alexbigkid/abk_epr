@@ -100,8 +100,6 @@ loggers:
             self.assertEqual(mock_getcwd.mock_calls, [call()])
 
 
-    # TODO:abk: test case for current directory beeing . and invalid format
-
     def test_ExifRename__move_rename_convert_images_throws_given_image_dir_does_not_exist(self) -> None:
         with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
             self.clo.options.config_log_file = 'valid.yaml'
