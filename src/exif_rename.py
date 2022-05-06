@@ -18,7 +18,7 @@ from optparse import OptionParser, Values
 from colorama import Fore, Style
 from yaml.loader import Loader
 from colorama import Fore, Style
-# import exiftool
+import exiftool
 
 # Local application imports
 from _version import __version__
@@ -110,8 +110,9 @@ class CommandLineOptions:
 
 class ExifRename:
     """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
-    FILES_TO_EXCLUDE  = {'Adobe Bridge Cache', 'Thumbs.db'}
-
+    FILES_TO_EXCLUDE_EXPRESSION  = 'Adobe Bridge Cache|Thumbs.db|^\.'
+    THMB = { "ext": ".jpg", "dir": "thmb" }
+    SUPPORTED_RAW_EXTENSION = [ '.cr2', '.nef', '.arw' ]
 
     def __init__(self, logger:logging.Logger=None, options:Values=None):
         self._logger = logger
@@ -129,6 +130,7 @@ class ExifRename:
         self._validate_image_dir()
         self._change_to_image_dir()
         self._read_image_dir()
+        self._move_and_rename_files()
         self._change_from_image_dir()
         self._function_log("move_rename_convert_images", False)
 
@@ -170,9 +172,22 @@ class ExifRename:
 
     def _read_image_dir(self) -> None:
         self._function_log("_read_image_dir", True)
-        self._logger.debug(f"<- _read_image_dir")
-        onlyfiles = [f for f in os.listdir('.') if os.path.isfile(f)]
-        self._logger.debug(f"only_files = {onlyfiles}")
+        files_list = [f for f in os.listdir('.') if os.path.isfile(f)]
+        filtered_list = sorted([i for i in files_list if not re.match(rf'{self.FILES_TO_EXCLUDE_EXPRESSION}', i)])
+        self._logger.debug(f"filtered_list = {filtered_list}")
+        for file in filtered_list:
+            file_base, file_extension = os.path.splitext(os.path.basename(file))
+            self._logger.debug(f'{file_base=}, {file_extension=}')
+            # check if it is a thumbnail from a raw file
+            if file_extension == self.THMB['ext']:
+                for raw_ext in self.SUPPORTED_RAW_EXTENSION:
+                    if os.path.isfile(f'{file_base}{raw_ext}'):
+                        file_ext = self.THMB['dir']
+                        self._logger.debug(f'{file_ext=}')
+        with exiftool.ExifTool() as et:
+            metadata = et.get_metadata()
+    # $file_exif = new Image::ExifTool;
+    # $file_exif->Options(DateFormat => '%Y%m%d_%H%M%S');
         self._function_log("_read_image_dir", False)
 
 
