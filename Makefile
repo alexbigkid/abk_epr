@@ -35,6 +35,8 @@ test_verbose:
 	python -m unittest discover --start-directory tests --verbose
 
 exif_rename:
+	echo "[ python ./src/exif_rename.py -d ./data/20220101_sony_raw -c ./src/logging.yaml -v ]"
+	echo "------------------------------------------------------------------------------------"
 	python ./src/exif_rename.py -d ./data/20220101_sony_raw -c ./src/logging.yaml -v
 
 clean:
