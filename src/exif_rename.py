@@ -2,14 +2,19 @@
 """Main program for renaming images and translate images from raw to dng format"""
 
 # Standard library imports
+from ast import Raise
+from asyncio.log import logger
 import os
 import sys
 import logging
 # import logging.handlers
 import logging.config
+from textwrap import indent
 import yaml
 import re
 import datetime
+import timeit
+import json
 # import asyncio
 
 # Third party imports
@@ -27,7 +32,19 @@ from _version import __version__
 CONSOLE_LOGGER = 'consoleLogger'
 FILE_LOGGER = 'fileLogger'
 
-class CommandLineOptions:
+class PerformanceTimer(object):
+    def __init__(self, timer_name, logger=None):
+        self._timer_name = timer_name
+        self._logger = logger
+    def __enter__(self):
+        self.start = timeit.default_timer()
+    def __exit__(self, exc_type, exc_value, traceback):
+        time_took = (timeit.default_timer() - self.start) * 1000.0
+        self._logger.info('Executing {} took {} ms'.format(self._timer_name, str(time_took)))
+
+
+
+class CommandLineOptions(object):
     """CommandLineOptions module handles all parameters passed in to the python script"""
     _args = None
     options = None
@@ -108,11 +125,18 @@ class CommandLineOptions:
 
 
 
-class ExifRename:
+class ExifRename(object):
     """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
     FILES_TO_EXCLUDE_EXPRESSION  = 'Adobe Bridge Cache|Thumbs.db|^\.'
-    THMB = { "ext": ".jpg", "dir": "thmb" }
+    THMB = { "ext": "jpg", "dir": "thmb" }
     SUPPORTED_RAW_EXTENSION = [ '.cr2', '.nef', '.arw' ]
+    EXIF_UNKNOWN            = 'unknown'
+    EXIF_SOURCE_FILE        = 'SourceFile'
+    EXIF_CREATE_DATE        = 'EXIF:CreateDate'
+    EXIF_MAKE               = 'EXIF:Make'
+    EXIF_MODEL              = 'EXIF:Model'
+    EXIF_TAGS = [ EXIF_CREATE_DATE, EXIF_MAKE, EXIF_MODEL ]
+    DIR_NAME                = 'DirName'
 
     def __init__(self, logger:logging.Logger=None, options:Values=None):
         self._logger = logger
@@ -124,12 +148,19 @@ class ExifRename:
         # if self._options.verbose:
         #     self._logger.
 
+    def check_exiftool(self) -> None:
+        self._function_log("check_exiftool", True)
+        with exiftool.ExifTool() as et:
+            et.logger=self._logger
+            exiftool_exe = et.executable
+            self._logger.debug(f'{exiftool_exe=}')
+        self._function_log("check_exiftool", False)
 
     def move_rename_convert_images(self) -> None:
         self._function_log("move_rename_convert_images", True)
         self._validate_image_dir()
         self._change_to_image_dir()
-        self._read_image_dir()
+        metadata_list = self._read_image_dir()
         self._move_and_rename_files()
         self._change_from_image_dir()
         self._function_log("move_rename_convert_images", False)
@@ -170,25 +201,37 @@ class ExifRename:
         self._function_log("_convert_raw_files", False)
 
 
-    def _read_image_dir(self) -> None:
+    def _read_image_dir(self) -> list:
         self._function_log("_read_image_dir", True)
+        metadata_list = []
         files_list = [f for f in os.listdir('.') if os.path.isfile(f)]
         filtered_list = sorted([i for i in files_list if not re.match(rf'{self.FILES_TO_EXCLUDE_EXPRESSION}', i)])
         self._logger.debug(f"filtered_list = {filtered_list}")
-        for file in filtered_list:
-            file_base, file_extension = os.path.splitext(os.path.basename(file))
-            self._logger.debug(f'{file_base=}, {file_extension=}')
-            # check if it is a thumbnail from a raw file
-            if file_extension == self.THMB['ext']:
-                for raw_ext in self.SUPPORTED_RAW_EXTENSION:
-                    if os.path.isfile(f'{file_base}{raw_ext}'):
-                        file_ext = self.THMB['dir']
-                        self._logger.debug(f'{file_ext=}')
         with exiftool.ExifTool() as et:
-            metadata = et.get_metadata()
-    # $file_exif = new Image::ExifTool;
-    # $file_exif->Options(DateFormat => '%Y%m%d_%H%M%S');
+            et.logger = self._logger
+            metadata_list = et.get_tags_batch(self.EXIF_TAGS, filtered_list)
+        if len(metadata_list) > 0:
+            for metadata in metadata_list:
+                # detect thumbnail files
+                file_name = metadata.get(self.EXIF_SOURCE_FILE)
+                file_base, file_extension = os.path.splitext(os.path.basename(file_name))
+                file_extension = file_extension.replace('.', '')
+                if file_extension == self.THMB['ext']:
+                    for raw_ext in self.SUPPORTED_RAW_EXTENSION:
+                        if os.path.isfile(f'{file_base}{raw_ext}'):
+                            file_extension = self.THMB['dir']
+                            self._logger.debug(f'{file_extension=} for file: {file_name}')
+                # modify the date format
+                metadata[self.EXIF_CREATE_DATE] = metadata.get(self.EXIF_CREATE_DATE, self.EXIF_UNKNOWN).replace(':','').replace(' ','_')
+                metadata[self.EXIF_MAKE] = metadata.get(self.EXIF_MAKE, self.EXIF_UNKNOWN).replace(' ','').lower()
+                metadata[self.EXIF_MODEL] = metadata.get(self.EXIF_MODEL, self.EXIF_UNKNOWN).replace(' ','').lower()
+                dir_name = '_'.join([metadata[self.EXIF_MAKE], metadata[self.EXIF_MODEL], file_extension])
+                metadata[self.DIR_NAME] = dir_name
+        else:
+            raise Exception('no files to process for current directory.')
+        self._logger.debug(f'metadata_list = {json.dumps(metadata_list, indent=4)}')
         self._function_log("_read_image_dir", False)
+        return metadata_list
 
 
     def _validate_image_dir(self):
@@ -217,6 +260,7 @@ def main():
         command_line_options = CommandLineOptions()
         command_line_options.handle_options()
         exif_rename = ExifRename(logger=command_line_options.logger, options=command_line_options.options)
+        exif_rename.check_exiftool()
         exif_rename.move_rename_convert_images()
     except Exception as exception:
         exif_rename.return_to_previous_state()
