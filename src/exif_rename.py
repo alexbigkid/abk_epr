@@ -204,33 +204,36 @@ class ExifRename(object):
     def _read_image_dir(self) -> list:
         self._function_log("_read_image_dir", True)
         metadata_list = []
-        files_list = [f for f in os.listdir('.') if os.path.isfile(f)]
-        filtered_list = sorted([i for i in files_list if not re.match(rf'{self.FILES_TO_EXCLUDE_EXPRESSION}', i)])
-        self._logger.debug(f"filtered_list = {filtered_list}")
-        with exiftool.ExifTool() as et:
-            et.logger = self._logger
-            metadata_list = et.get_tags_batch(self.EXIF_TAGS, filtered_list)
-        if len(metadata_list) > 0:
-            for metadata in metadata_list:
-                # detect thumbnail files
-                file_name = metadata.get(self.EXIF_SOURCE_FILE)
-                file_base, file_extension = os.path.splitext(os.path.basename(file_name))
-                file_extension = file_extension.replace('.', '')
-                if file_extension == self.THMB['ext']:
-                    for raw_ext in self.SUPPORTED_RAW_EXTENSION:
-                        if os.path.isfile(f'{file_base}{raw_ext}'):
-                            file_extension = self.THMB['dir']
-                            self._logger.debug(f'{file_extension=} for file: {file_name}')
-                # modify the date format
-                metadata[self.EXIF_CREATE_DATE] = metadata.get(self.EXIF_CREATE_DATE, self.EXIF_UNKNOWN).replace(':','').replace(' ','_')
-                metadata[self.EXIF_MAKE] = metadata.get(self.EXIF_MAKE, self.EXIF_UNKNOWN).replace(' ','').lower()
-                metadata[self.EXIF_MODEL] = metadata.get(self.EXIF_MODEL, self.EXIF_UNKNOWN).replace(' ','').lower()
-                dir_name = '_'.join([metadata[self.EXIF_MAKE], metadata[self.EXIF_MODEL], file_extension])
-                metadata[self.DIR_NAME] = dir_name
-        else:
-            raise Exception('no files to process for current directory.')
-        self._logger.debug(f'metadata_list = {json.dumps(metadata_list, indent=4)}')
-        self._function_log("_read_image_dir", False)
+        with PerformanceTimer(timer_name="ReadingImageDirectory", logger=self._logger):
+            files_list = [f for f in os.listdir('.') if os.path.isfile(f)]
+            filtered_list = sorted([i for i in files_list if not re.match(rf'{self.FILES_TO_EXCLUDE_EXPRESSION}', i)])
+            self._logger.debug(f"filtered_list = {filtered_list}")
+            with exiftool.ExifTool() as et:
+                et.logger = self._logger
+                metadata_list = et.get_tags_batch(self.EXIF_TAGS, filtered_list)
+            if len(metadata_list) > 0:
+                for metadata in metadata_list:
+                    # detect thumbnail files
+                    file_name = metadata.get(self.EXIF_SOURCE_FILE)
+                    file_base, file_extension = os.path.splitext(os.path.basename(file_name))
+                    file_extension = file_extension.replace('.', '').lower()
+                    if file_extension == self.THMB['ext']:
+                        # timeit here
+                        for raw_ext in self.SUPPORTED_RAW_EXTENSION:
+                            # if os.path.isfile(f'{file_base}{raw_ext}'):
+                            if f'{file_base.lower()}{raw_ext}' in [ j.lower() for j in filtered_list ]:
+                                file_extension = self.THMB['dir']
+                                self._logger.debug(f'{file_extension=} for file: {file_name}')
+                    # modify the date format
+                    metadata[self.EXIF_CREATE_DATE] = metadata.get(self.EXIF_CREATE_DATE, self.EXIF_UNKNOWN).replace(':','').replace(' ','_')
+                    metadata[self.EXIF_MAKE] = metadata.get(self.EXIF_MAKE, self.EXIF_UNKNOWN).replace(' ','').lower()
+                    metadata[self.EXIF_MODEL] = metadata.get(self.EXIF_MODEL, self.EXIF_UNKNOWN).replace(' ','').lower()
+                    dir_name = '_'.join([metadata[self.EXIF_MAKE], metadata[self.EXIF_MODEL], file_extension])
+                    metadata[self.DIR_NAME] = dir_name
+            else:
+                raise Exception('no files to process for current directory.')
+            self._logger.debug(f'metadata_list = {json.dumps(metadata_list, indent=4)}')
+            self._function_log("_read_image_dir", False)
         return metadata_list
 
 
