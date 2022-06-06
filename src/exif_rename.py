@@ -59,7 +59,7 @@ class CommandLineOptions(object):
     def handle_options(self) -> None:
         """Handles user specified options and arguments"""
         usage_string = "usage: %prog [options]"
-        version_string = "%prog version: " + Fore.GREEN + f"{__version__}{Style.RESET_ALL}"
+        version_string = f"%prog version: {Fore.GREEN}{__version__}{Style.RESET_ALL}"
         parser = OptionParser(usage=usage_string, version=version_string)
         parser.add_option(
             "-d",
@@ -139,7 +139,7 @@ class ExifRename(object):
     DIR_NAME                = 'DirName'
 
     def __init__(self, logger:logging.Logger=None, options:Values=None):
-        self._logger = logger
+        self._logger = logger or self.__class__.__name__
         self._options = options
         self._current_dir = None
 
@@ -251,7 +251,7 @@ class ExifRename(object):
 
 
     def _function_log(self, function_name:str, entering:bool):
-        self._logger.debug(Fore.CYAN + f"{('<-', '->')[entering]} {function_name}" + Fore.RESET)
+        self._logger.debug(f"{Fore.CYAN}{('<-', '->')[entering]} {function_name}{Fore.RESET}")
 
 
 
@@ -267,7 +267,7 @@ def main():
         exif_rename.move_rename_convert_images()
     except Exception as exception:
         exif_rename.return_to_previous_state()
-        print(Fore.RED + f"ERROR: executing exif image renamer")
+        print(f"{Fore.RED}ERROR: executing exif image renamer")
         print(f"EXCEPTION: {exception}{Style.RESET_ALL}")
         exit_code = 1
     finally:
