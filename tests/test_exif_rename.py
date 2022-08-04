@@ -49,7 +49,7 @@ loggers:
         return super().setUp()
 
     # -------------------------------------------------------------------------
-    # Tests for get_ingredients
+    # Tests for CommandLineOptions
     # -------------------------------------------------------------------------
     def test_CommandLineOptions__setup_logger_throws_given_yaml_config_file_does_not_exist(self) -> None:
         with self.assertRaises(IOError) as context:

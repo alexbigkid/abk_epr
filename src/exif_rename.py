@@ -2,14 +2,10 @@
 """Main program for renaming images and translate images from raw to dng format"""
 
 # Standard library imports
-from ast import Raise
-from asyncio.log import logger
 import os
 import sys
 import logging
-# import logging.handlers
 import logging.config
-from textwrap import indent
 import yaml
 import re
 import datetime
@@ -83,7 +79,7 @@ class CommandLineOptions(object):
             action="store_true",
             dest="log_into_file",
             default=False,
-            help="log into file exif_rename.log, if True, otherwise log into console"
+            help="log into file exif_rename.log if True, otherwise log into console"
         )
         parser.add_option(
             "-c",
@@ -139,7 +135,7 @@ class ExifRename(object):
     DIR_NAME                = 'DirName'
 
     def __init__(self, logger:logging.Logger=None, options:Values=None):
-        self._logger = logger or self.__class__.__name__
+        self._logger = logger or logging.getLogger(__name__)
         self._options = options
         self._current_dir = None
 
