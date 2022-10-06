@@ -28,6 +28,21 @@ from _version import __version__
 CONSOLE_LOGGER = 'consoleLogger'
 FILE_LOGGER = 'fileLogger'
 
+
+def function_trace(original_function):
+    """Decorator function to help to trace function call entry and exit
+    Args:
+        original_function (_type_): function above which the decorater is defined
+    """
+    def function_wrapper(*args, **kwargs):
+        _logger = logging.getLogger(original_function.__name__)
+        _logger.debug(f"{Fore.CYAN}-> {original_function.__name__}{Fore.RESET}")
+        result = original_function(*args, **kwargs)
+        _logger.debug(f"{Fore.CYAN}<- {original_function.__name__}{Fore.RESET}\n")
+        return result
+    return function_wrapper
+
+
 class PerformanceTimer(object):
     def __init__(self, timer_name, logger=None):
         self._timer_name = timer_name
@@ -134,71 +149,67 @@ class ExifRename(object):
     EXIF_TAGS = [ EXIF_CREATE_DATE, EXIF_MAKE, EXIF_MODEL ]
     DIR_NAME                = 'DirName'
 
+
     def __init__(self, logger:logging.Logger=None, options:Values=None):
         self._logger = logger or logging.getLogger(__name__)
         self._options = options
         self._current_dir = None
+
 
     def __del__(self):
         pass
         # if self._options.verbose:
         #     self._logger.
 
+
+    @function_trace
     def check_exiftool(self) -> None:
-        self._function_log("check_exiftool", True)
         with exiftool.ExifTool() as et:
             et.logger=self._logger
             exiftool_exe = et.executable
             self._logger.debug(f'{exiftool_exe=}')
-        self._function_log("check_exiftool", False)
 
+    @function_trace
     def move_rename_convert_images(self) -> None:
-        self._function_log("move_rename_convert_images", True)
         self._validate_image_dir()
         self._change_to_image_dir()
         metadata_list = self._read_image_dir()
         self._move_and_rename_files()
         self._change_from_image_dir()
-        self._function_log("move_rename_convert_images", False)
 
 
+    @function_trace
     def return_to_previous_state(self):
-        self._function_log("return_to_previous_state", True)
         self._change_from_image_dir()
-        self._function_log("return_to_previous_state", False)
 
 
+    @function_trace
     def _change_to_image_dir(self) -> None:
-        self._function_log("_change_to_image_dir", True)
         if self._options.dir != ".":
             self._current_dir = os.getcwd()
             os.chdir(self._options.dir)
             self._logger.info(f"inside directory: {self._options.dir}")
-        self._function_log("_change_to_image_dir", False)
 
 
+    @function_trace
     def _change_from_image_dir(self) -> None:
-        self._function_log("_change_from_image_dir", True)
         if self._current_dir is not None:
             os.chdir(self._current_dir)
             self._logger.info(f"inside directory: {self._current_dir}")
-        self._function_log("_change_from_image_dir", False)
 
 
+    @function_trace
     def _move_and_rename_files(self) -> None:
-        self._function_log("_move_and_rename_files", True)
         pass
-        self._function_log("_move_and_rename_files", False)
 
 
+    @function_trace
     def _convert_raw_files(self) -> None:
-        self._function_log("_convert_raw_files", True)
         pass
-        self._function_log("_convert_raw_files", False)
 
 
+    @function_trace
     def _read_image_dir(self) -> list:
-        self._function_log("_read_image_dir", True)
         metadata_list = []
         with PerformanceTimer(timer_name="ReadingImageDirectory", logger=self._logger):
             files_list = [f for f in os.listdir('.') if os.path.isfile(f)]
@@ -229,12 +240,11 @@ class ExifRename(object):
             else:
                 raise Exception('no files to process for current directory.')
             self._logger.debug(f'metadata_list = {json.dumps(metadata_list, indent=4)}')
-            self._function_log("_read_image_dir", False)
         return metadata_list
 
 
+    @function_trace
     def _validate_image_dir(self):
-        self._function_log("validate_image_dir", True)
         self._logger.debug(f"self._options.dir: {self._options.dir}")
         try:
             dir_name_to_validate = (self._options.dir, os.getcwd())[self._options.dir == '.']
@@ -243,12 +253,6 @@ class ExifRename(object):
             datetime.datetime.strptime(date_format.group(1), '%Y%m%d')
         except:
             raise Exception("Not a valid date / directory format, please use: YYYYMMDD_name_of_the_project")
-        self._function_log("validate_image_dir", False)
-
-
-    def _function_log(self, function_name:str, entering:bool):
-        self._logger.debug(f"{Fore.CYAN}{('<-', '->')[entering]} {function_name}{Fore.RESET}")
-
 
 
 
