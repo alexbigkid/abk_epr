@@ -1,4 +1,4 @@
-# :octocat: abk_epr - exif picture renamer :octocat
+# :octocat: abk_epr - exif picture renamer :octocat:
 
 EXIF picture renamer - renames all image files in the folder according to image file exif metadata for easy ordering and archiving
 
