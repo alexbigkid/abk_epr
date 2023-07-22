@@ -228,9 +228,9 @@ class ExifRename(object):
             files_list = [f for f in os.listdir('.') if os.path.isfile(f)]
             filtered_list = sorted([i for i in files_list if not re.match(rf'{self.FILES_TO_EXCLUDE_EXPRESSION}', i)])
             self._logger.debug(f"filtered_list = {filtered_list}")
-            with exiftool.ExifToolAlpha() as exif_tool_alpha:
-                exif_tool_alpha.logger = self._logger
-                metadata_list = exif_tool_alpha.get_tags_batch_wrapper(self.EXIF_TAGS, filtered_list)
+            with exiftool.ExifToolHelper() as etp:
+                etp.logger = self._logger
+                metadata_list = etp.get_tags(files=filtered_list, tags=self.EXIF_TAGS)
             for metadata in metadata_list:
                 # detect thumbnail files
                 file_name = metadata.get(self.EXIF_SOURCE_FILE)
@@ -249,9 +249,10 @@ class ExifRename(object):
                 metadata[self.EXIF_MODEL] = metadata.get(self.EXIF_MODEL, self.EXIF_UNKNOWN).replace(' ','').lower()
                 dir_name = '_'.join([metadata[self.EXIF_MAKE], metadata[self.EXIF_MODEL], file_extension])
                 metadata[self.DIR_NAME] = dir_name
-            else:
-                raise Exception('no files to process for current directory.')
-            self._logger.debug(f'metadata_list = {json.dumps(metadata_list, indent=4)}')
+
+        if not metadata_list:
+            raise Exception('no files to process for the current directory.')
+        self._logger.debug(f'metadata_list = {json.dumps(metadata_list, indent=4)}')
         return metadata_list
 
 
