@@ -9,7 +9,7 @@ import logging
 import logging.config
 import yaml
 import re
-import datetime
+from datetime import datetime
 import timeit
 import json
 from typing import Optional
@@ -100,7 +100,7 @@ class CommandLineOptions(object):
             action="store_true",
             dest="log_into_file",
             default=False,
-            help="log into file exif_rename.log if True, otherwise log into console"
+            help="log into file abk_epr.log if True, otherwise log into console"
         )
         parser.add_option(
             "-c",
@@ -186,7 +186,7 @@ class ExifRename(object):
 
 
     @function_trace
-    def return_to_previous_state(self):
+    def return_to_previous_state(self) -> None:
         """Returns to the previous state"""
         self._change_from_image_dir()
 
@@ -262,7 +262,7 @@ class ExifRename(object):
             dir_name_to_validate = (self._options.dir, os.getcwd())[self._options.dir == '.']
             last_part_of_dir = os.path.basename(os.path.normpath(dir_name_to_validate))
             date_format = re.match('^(\d{8})_\w+$', last_part_of_dir)
-            datetime.datetime.strptime(date_format.group(1), '%Y%m%d')
+            datetime.strptime(date_format.group(1), '%Y%m%d')
         except:
             raise Exception("Not a valid date / directory format, please use: YYYYMMDD_name_of_the_project")
 
@@ -280,7 +280,7 @@ def main():
         exif_rename.move_rename_convert_images()
         exit_code = 0
     except Exception as exception:
-        if exif_rename is not None:
+        if exif_rename:
             exif_rename.return_to_previous_state()
         print(f"{Fore.RED}ERROR: executing exif image renamer")
         print(f"EXCEPTION: {exception}{Style.RESET_ALL}")
