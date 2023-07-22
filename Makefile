@@ -11,7 +11,7 @@ epr:
 	cd $(EPR_HOME) && python abk_epr.py -d ../data/20220101_sony_raw -c logging.yaml -v
 
 epr_log:
-	cd $(EPR_HOME) && python abk_epr.py -d ../data/20220101_sony_raw -c logging.yaml -l abk_epr.log -v
+	cd $(EPR_HOME) && python abk_epr.py -d ../data/20220101_sony_raw -c logging.yaml -l -v
 
 epr_trace:
 	cd $(EPR_HOME) && python abk_epr.py -d ../data/20220101_sony_raw -c logging.yaml -v
