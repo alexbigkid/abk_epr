@@ -19,7 +19,7 @@ handlers:
         class: logging.handlers.RotatingFileHandler
         level: DEBUG
         formatter: abkFormatterLong
-        filename: exif_rename.log
+        filename: abk_epr.log
         maxBytes: 1024
         backupCount: 10
 
