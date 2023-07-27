@@ -129,5 +129,6 @@ dmypy.json
 .vscode/*
 
 data/*
+spikes/*
 .DS_Store
 data.zip
