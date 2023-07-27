@@ -6,15 +6,15 @@ EPR_HOME = src
 # abk_epr Makefile rules
 # -----------------------------------------------------------------------------
 epr:
-	echo "[ python ./src/abk_epr.py -d ./data/20110709_canon -c ./src/logging.yaml -v ]"
+	echo "[ python ./src/abk_epr.py -d ./data/20230725_mixed_img -c ./src/logging.yaml -v ]"
 	echo "------------------------------------------------------------------------------------"
-	cd $(EPR_HOME) && python abk_epr.py -d ../data/20110709_canon -c logging.yaml -v
+	cd $(EPR_HOME) && python abk_epr.py -d ../data/20230725_mixed_img -c logging.yaml -v
 
 epr_log:
-	cd $(EPR_HOME) && python abk_epr.py -d ../data/20110709_canon -c logging.yaml -l -v
+	cd $(EPR_HOME) && python abk_epr.py -d ../data/20230725_mixed_img -c logging.yaml -l -v
 
 epr_trace:
-	cd $(EPR_HOME) && python abk_epr.py -d ../data/20110709_canon -c logging.yaml -v
+	cd $(EPR_HOME) && python abk_epr.py -d ../data/20230725_mixed_img -c logging.yaml -v
 
 
 # -----------------------------------------------------------------------------
