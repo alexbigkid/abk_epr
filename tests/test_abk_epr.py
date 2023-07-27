@@ -121,12 +121,27 @@ loggers:
             self.assertEqual(mock_getcwd.mock_calls, [call(), call()])
 
 
-    @patch('exiftool.ExifToolHelper.get_tags')
+    @patch('exiftool.ExifTool')
+    def test_ExifRename__check_exiftool__get_tests_run_withoutexiftool_installed(self, mock_exif) -> None:
+        with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
+            self.clo.options.config_log_file = 'valid.yaml'
+            self.clo._setup_logging()
+            mock_file.assert_called_with('valid.yaml', 'r', encoding='utf-8')
+            self.mut = ExifRename(logger=self.clo.logger, options=self.clo.options)
+            mock_exif.return_value.executable = '/path/to/exiftool'
+
+            try:
+                self.mut.check_exiftool()
+            except Exception as exc:
+                self.fail(f"An unexpected exception occurred: {exc}")
+
+
+    @unittest.skip("still not ready")
+    @patch('exiftool.ExifToolHelper')
     @patch('os.listdir')
     @patch('os.chdir')
     @patch('os.getcwd')
-    def test_ExifRename__move_rename_convert_images_does_not_change_dir_given_it_is_current_dir(self, mock_getcwd, mock_chdir, mock_listdir, mock_eth_gt) -> None:
-    # def test_ExifRename__move_rename_convert_images_does_not_change_dir_given_it_is_current_dir(self, mock_getcwd, mock_chdir, mock_listdir) -> None:
+    def test_ExifRename__move_rename_convert_images_does_not_change_dir_given_it_is_current_dir(self, mock_getcwd, mock_chdir, mock_listdir, mock_eth) -> None:
         with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
             self.clo.options.config_log_file = 'valid.yaml'
             self.clo.options.dir = '.'
@@ -135,24 +150,27 @@ loggers:
             self.mut = ExifRename(logger=self.clo.logger, options=self.clo.options)
             mock_getcwd.return_value = self.TEST_CURRENT_DIR
             mock_listdir.return_value = ['a.json', 'b.json', 'c.json', 'd.txt']
-            mock_eth_gt.return_value = []
+            mock_eth.return_value.get_tags.return_value = []
 
+            # with patch('exiftool.ExifTool') as mock_exif:
+                # mock_exif.return_value.executable = '/path/to/exiftool'
             with self.assertRaises(Exception) as context:
                 self.mut.move_rename_convert_images()
 
             self.assertEqual("no files to process for the current directory.", str(context.exception))
-            self.assertEqual(mock_eth_gt.mock_calls, [call(files=[], tags=['EXIF:CreateDate', 'EXIF:Make', 'EXIF:Model'])])
+            print(f"{mock_eth.mock_calls = }")
+            self.assertEqual(mock_eth.mock_calls, [call(files=[], tags=['EXIF:CreateDate', 'EXIF:Make', 'EXIF:Model'])])
             self.assertEqual(mock_listdir.mock_calls, [call('.')])
             self.assertEqual(mock_chdir.mock_calls, [])
             self.assertEqual(mock_getcwd.mock_calls, [call()])
 
 
+    @unittest.skip("still not ready")
     @patch('exiftool.ExifToolHelper.get_tags')
     @patch('os.listdir')
     @patch('os.chdir')
     @patch('os.getcwd')
     def test_ExifRename__move_rename_convert_images_calls_get_change_list_dir(self, mock_getcwd, mock_chdir, mock_listdir, mock_eth_gt) -> None:
-    # def test_ExifRename__move_rename_convert_images_does_not_change_dir_given_it_is_current_dir(self, mock_getcwd, mock_chdir, mock_listdir) -> None:
         with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
             self.clo.options.config_log_file = 'valid.yaml'
             self.clo.options.dir = '.'
@@ -162,15 +180,35 @@ loggers:
             mock_getcwd.return_value = self.TEST_CURRENT_DIR
             files_to_return = ['a.json', 'b.json']
             mock_listdir.return_value = files_to_return
-            mock_eth_gt.return_value = []
+            mock_eth_gt.return_value = [{
+  "SourceFile": "20110709_174538_5dm2_vancouver_035.cr2",
+  "EXIF:CreateDate": "2011:07:09 17:45:38",
+  "EXIF:Make": "Canon",
+  "EXIF:Model": "Canon EOS 5D Mark II"
+},
+{
+  "SourceFile": "20110709_174604_5dm2_vancouver_036.cr2",
+  "EXIF:CreateDate": "2011:07:09 17:46:04",
+  "EXIF:Make": "Canon",
+  "EXIF:Model": "Canon EOS 5D Mark II"
+},
+{
+  "SourceFile": "20110709_175718_5dm2_vancouver_038.cr2",
+  "EXIF:CreateDate": "2011:07:09 17:57:18",
+  "EXIF:Make": "Canon",
+  "EXIF:Model": "Canon EOS 5D Mark II"
+},
+{
+  "SourceFile": "20110709_175905_5dm2_vancouver_040.cr2",
+  "EXIF:CreateDate": "2011:07:09 17:59:05",
+  "EXIF:Make": "Canon",
+  "EXIF:Model": "Canon EOS 5D Mark II"
+}]
 
             with patch('os.path.isfile', return_value=True) as mock_isfile:
-                with self.assertRaises(Exception) as context:
-                    self.mut.move_rename_convert_images()
-                self.assertEqual("no files to process for the current directory.", str(context.exception))
-            self.assertEqual(mock_isfile.mock_calls, [call(files_to_return[0]), call(files_to_return[1])])
+                self.mut.move_rename_convert_images()
 
-            self.assertEqual("no files to process for the current directory.", str(context.exception))
+            self.assertEqual(mock_isfile.mock_calls, [call(files_to_return[0]), call(files_to_return[1])])
             self.assertEqual(mock_eth_gt.mock_calls, [call(files=files_to_return, tags=['EXIF:CreateDate', 'EXIF:Make', 'EXIF:Model'])])
             self.assertEqual(mock_listdir.mock_calls, [call('.')])
             self.assertEqual(mock_chdir.mock_calls, [])

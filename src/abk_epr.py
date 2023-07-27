@@ -2,7 +2,7 @@
 """Main program for renaming images and translate images from raw to dng format"""
 
 # Standard library imports
-from asyncio.log import logger
+from enum import Enum
 import os
 import sys
 import logging
@@ -12,7 +12,7 @@ import re
 from datetime import datetime
 import timeit
 import json
-from typing import Optional
+from typing import Optional, Union
 # import asyncio
 
 # Third party imports
@@ -140,12 +140,34 @@ class CommandLineOptions(object):
         self.logger.debug(f"logger_type: {logger_type}")
 
 
+class ListType(Enum):
+    """ListType is type of image or video list"""
+    RAW_IMAGE_LIST = "raw_image_list"
+    THUMB_IMAGE_LIST = "thumb_image_list"
+    COMPRESSED_IMAGE_LIST = "compressed_image_list"
+    COMPRESSED_VIDEO_LIST = "compressed_video_list"
+
+
 
 class ExifRename(object):
     """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
     FILES_TO_EXCLUDE_EXPRESSION  = 'Adobe Bridge Cache|Thumbs.db|^\.'
-    THMB = { "ext": "jpg", "dir": "thmb" }
-    SUPPORTED_RAW_EXTENSION = [ '.cr2', '.nef', '.arw' ]
+    THMB = { 'ext': 'jpg', 'dir': 'thmb' }
+    SUPPORTED_RAW_IMAGE_EXT = {
+        'Canon': [ 'crw', 'cr2', 'cr3' ],
+        'FujiFilm': [ 'raf' ],
+        'Leica': [ 'rwl' ],
+        'Minolta': [ 'mrw' ],
+        'Nikon': [ 'nef', 'nrw' ],
+        'Olympus': [ 'orw' ],
+        'Panasonic': [ 'raw', 'rw2' ],
+        'Pentax': [ 'pef' ],
+        'Samsung': [ 'srw' ],
+        'Sony': [ 'arw', 'sr2' ]
+    }
+    SUPPORTED_COMPRESSED_IMAGE_EXT_LIST = [ 'gif', 'heic', 'jpg', 'jpeg', 'jng', 'mng', 'png', 'psd', 'tiff', 'tif' ]
+    # crm (Canon Raw Movie) is not compressed, but we are not going to compress/transform into other format.
+    SUPPORTED_COMPRESSED_VIDEO_EXT_LIST = [ '3g2', '3gp2', 'crm', 'm4a', 'm4b', 'm4p', 'm4v', 'mov', 'mp4', 'mqv', 'qt' ]
     EXIF_UNKNOWN            = 'unknown'
     EXIF_SOURCE_FILE        = 'SourceFile'
     EXIF_CREATE_DATE        = 'EXIF:CreateDate'
@@ -159,6 +181,8 @@ class ExifRename(object):
         self._logger = logger or logging.getLogger(__name__)
         self._options = options
         self._current_dir = None
+        self._supported_raw_image_ext_list = list(set([ext for exts in self.SUPPORTED_RAW_IMAGE_EXT.values() for ext in exts]))
+        self._logger.debug(f"{self._supported_raw_image_ext_list = }")
 
 
     def __del__(self):
@@ -221,9 +245,9 @@ class ExifRename(object):
 
 
     @function_trace
-    def _read_image_dir(self) -> list:
+    def _read_image_dir(self) -> dict:
         """Reads image directory"""
-        metadata_list = []
+        list_collection = {}
         with PerformanceTimer(timer_name="ReadingImageDirectory", logger=self._logger):
             files_list = [f for f in os.listdir('.') if os.path.isfile(f)]
             filtered_list = sorted([i for i in files_list if not re.match(rf'{self.FILES_TO_EXCLUDE_EXPRESSION}', i)])
@@ -231,29 +255,48 @@ class ExifRename(object):
             with exiftool.ExifToolHelper() as etp:
                 etp.logger = self._logger
                 metadata_list = etp.get_tags(files=filtered_list, tags=self.EXIF_TAGS)
+                self._logger.debug(f"{metadata_list = }")
             for metadata in metadata_list:
+                list_type: Union[ListType, None] = None
                 # detect thumbnail files
                 file_name = metadata.get(self.EXIF_SOURCE_FILE)
                 file_base, file_extension = os.path.splitext(os.path.basename(file_name))
                 file_extension = file_extension.replace('.', '').lower()
-                if file_extension == self.THMB['ext']:
-                    # timeit here
-                    for raw_ext in self.SUPPORTED_RAW_EXTENSION:
-                        # if os.path.isfile(f'{file_base}{raw_ext}'):
-                        if f'{file_base.lower()}{raw_ext}' in [ j.lower() for j in filtered_list ]:
-                            file_extension = self.THMB['dir']
-                            self._logger.debug(f'{file_extension=} for file: {file_name}')
-                # modify the date format
-                metadata[self.EXIF_CREATE_DATE] = metadata.get(self.EXIF_CREATE_DATE, self.EXIF_UNKNOWN).replace(':','').replace(' ','_')
-                metadata[self.EXIF_MAKE] = metadata.get(self.EXIF_MAKE, self.EXIF_UNKNOWN).replace(' ','').lower()
-                metadata[self.EXIF_MODEL] = metadata.get(self.EXIF_MODEL, self.EXIF_UNKNOWN).replace(' ','').lower()
-                dir_name = '_'.join([metadata[self.EXIF_MAKE], metadata[self.EXIF_MODEL], file_extension])
-                metadata[self.DIR_NAME] = dir_name
 
-        if not metadata_list:
+                if file_extension in self._supported_raw_image_ext_list:
+                    list_type = ListType.RAW_IMAGE_LIST
+                elif file_extension in self.SUPPORTED_COMPRESSED_IMAGE_EXT_LIST:
+                    if file_extension == self.THMB['ext']:
+                        # timeit here
+                        for raw_ext in self._supported_raw_image_ext_list:
+                            # if os.path.isfile(f'{file_base}{raw_ext}'):
+                            if f'{file_base.lower()}{raw_ext}' in [ j.lower() for j in filtered_list ]:
+                                file_extension = self.THMB['dir']
+                                self._logger.debug(f'{file_extension=} for file: {file_name}')
+                                list_type = ListType.THUMB_IMAGE_LIST
+                                break
+                        else:
+                            list_type = ListType.COMPRESSED_IMAGE_LIST
+                    else:
+                        list_type = ListType.COMPRESSED_IMAGE_LIST
+                elif file_extension in self.SUPPORTED_COMPRESSED_VIDEO_EXT_LIST:
+                    list_type = ListType.COMPRESSED_VIDEO_LIST
+
+                if list_type:
+                    # modify the date format
+                    metadata[self.EXIF_CREATE_DATE] = metadata.get(self.EXIF_CREATE_DATE, self.EXIF_UNKNOWN).replace(':','').replace(' ','_')
+                    metadata[self.EXIF_MAKE] = metadata.get(self.EXIF_MAKE, self.EXIF_UNKNOWN).replace(' ','').lower()
+                    metadata[self.EXIF_MODEL] = metadata.get(self.EXIF_MODEL, self.EXIF_UNKNOWN).replace(' ','').lower()
+                    dir_name = '_'.join([metadata[self.EXIF_MAKE], metadata[self.EXIF_MODEL], file_extension])
+                    metadata[self.DIR_NAME] = dir_name
+                    self._logger.debug(f"{list_type.value = }")
+                    list_collection.setdefault(list_type.value, []).append(metadata)
+
+
+        if len(list_collection) == 0:
             raise Exception('no files to process for the current directory.')
-        self._logger.debug(f'metadata_list = {json.dumps(metadata_list, indent=4)}')
-        return metadata_list
+        self._logger.debug(f'list_collection = {json.dumps(list_collection, indent=4)}')
+        return list_collection
 
 
     @function_trace
