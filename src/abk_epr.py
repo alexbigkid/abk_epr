@@ -267,14 +267,10 @@ class ExifRename(object):
                     list_type = ListType.RAW_IMAGE_LIST
                 elif file_extension in self.SUPPORTED_COMPRESSED_IMAGE_EXT_LIST:
                     if file_extension == self.THMB['ext']:
-                        # timeit here
-                        for raw_ext in self._supported_raw_image_ext_list:
-                            # if os.path.isfile(f'{file_base}{raw_ext}'):
-                            if f'{file_base.lower()}{raw_ext}' in [ j.lower() for j in filtered_list ]:
-                                file_extension = self.THMB['dir']
-                                self._logger.debug(f'{file_extension=} for file: {file_name}')
-                                list_type = ListType.THUMB_IMAGE_LIST
-                                break
+                        if any(f'{file_base.lower()}{raw_ext}' in [j.lower() for j in filtered_list] for raw_ext in self._supported_raw_image_ext_list):
+                            file_extension = self.THMB['dir']
+                            self._logger.debug(f'{file_extension=} for file: {file_name}')
+                            list_type = ListType.THUMB_IMAGE_LIST
                         else:
                             list_type = ListType.COMPRESSED_IMAGE_LIST
                     else:
@@ -283,10 +279,13 @@ class ExifRename(object):
                     list_type = ListType.COMPRESSED_VIDEO_LIST
 
                 if list_type:
-                    # modify the date format
                     metadata[self.EXIF_CREATE_DATE] = metadata.get(self.EXIF_CREATE_DATE, self.EXIF_UNKNOWN).replace(':','').replace(' ','_')
-                    metadata[self.EXIF_MAKE] = metadata.get(self.EXIF_MAKE, self.EXIF_UNKNOWN).replace(' ','').lower()
-                    metadata[self.EXIF_MODEL] = metadata.get(self.EXIF_MODEL, self.EXIF_UNKNOWN).replace(' ','').lower()
+                    metadata[self.EXIF_MAKE] = metadata.get(self.EXIF_MAKE, self.EXIF_UNKNOWN).replace(' ','')
+                    if metadata[self.EXIF_MAKE] == self.EXIF_UNKNOWN and list_type == ListType.RAW_IMAGE_LIST:
+                        metadata[self.EXIF_MAKE] = next((key for key, value in self.SUPPORTED_RAW_IMAGE_EXT.items() if any(ext in file_extension for ext in value)), self.EXIF_UNKNOWN)
+                    metadata[self.EXIF_MODEL] = metadata.get(self.EXIF_MODEL, self.EXIF_UNKNOWN).replace(' ','')
+                    if metadata[self.EXIF_MAKE] in metadata[self.EXIF_MODEL] and metadata[self.EXIF_MAKE] != self.EXIF_UNKNOWN:
+                        metadata[self.EXIF_MODEL] = metadata[self.EXIF_MODEL].replace(metadata[self.EXIF_MAKE], '').strip()
                     dir_name = '_'.join([metadata[self.EXIF_MAKE], metadata[self.EXIF_MODEL], file_extension])
                     metadata[self.DIR_NAME] = dir_name
                     self._logger.debug(f"{list_type.value = }")
