@@ -13,11 +13,11 @@ from datetime import datetime
 import timeit
 import json
 from typing import Optional, Union
-# import asyncio
+import asyncio
 
 # Third party imports
 from optparse import OptionParser, Values
-# from pydngconverter import DNGConverter, flags
+from pydngconverter import DNGConverter, flags
 from colorama import Fore, Style
 from yaml.loader import Loader
 from colorama import Fore, Style
@@ -148,12 +148,20 @@ class ListType(Enum):
     COMPRESSED_VIDEO_LIST = "compressed_video_list"
 
 
+class ExifTag(Enum):
+    """ExifTags contains all exif meta data tags"""
+    SOURCE_FILE     = 'SourceFile'
+    CREATE_DATE     = "EXIF:CreateDate"
+    MAKE            = "EXIF:Make"
+    MODEL           = "EXIF:Model"
+
 
 class ExifRename(object):
     """ExifRename contains module to convert RAW images to DNG and rename them using exif meta data"""
     FILES_TO_EXCLUDE_EXPRESSION  = 'Adobe Bridge Cache|Thumbs.db|^\.'
     THMB = { 'ext': 'jpg', 'dir': 'thmb' }
     SUPPORTED_RAW_IMAGE_EXT = {
+        'Adobe': [ 'dng' ],
         'Canon': [ 'crw', 'cr2', 'cr3' ],
         'FujiFilm': [ 'raf' ],
         'Leica': [ 'rwl' ],
@@ -169,12 +177,9 @@ class ExifRename(object):
     # crm (Canon Raw Movie) is not compressed, but we are not going to compress/transform into other format.
     SUPPORTED_COMPRESSED_VIDEO_EXT_LIST = [ '3g2', '3gp2', 'crm', 'm4a', 'm4b', 'm4p', 'm4v', 'mov', 'mp4', 'mqv', 'qt' ]
     EXIF_UNKNOWN            = 'unknown'
-    EXIF_SOURCE_FILE        = 'SourceFile'
-    EXIF_CREATE_DATE        = 'EXIF:CreateDate'
-    EXIF_MAKE               = 'EXIF:Make'
-    EXIF_MODEL              = 'EXIF:Model'
-    EXIF_TAGS = [ EXIF_CREATE_DATE, EXIF_MAKE, EXIF_MODEL ]
+    DATE_UNKNOWN            = 'yyyymmdd'
     DIR_NAME                = 'DirName'
+    EXIF_TAGS = [ ExifTag.CREATE_DATE.value, ExifTag.MAKE.value, ExifTag.MODEL.value ]
 
 
     def __init__(self, logger:logging.Logger, options:Values):
@@ -259,7 +264,7 @@ class ExifRename(object):
             for metadata in metadata_list:
                 list_type: Union[ListType, None] = None
                 # detect thumbnail files
-                file_name = metadata.get(self.EXIF_SOURCE_FILE)
+                file_name = metadata.get(ExifTag.SOURCE_FILE.value)
                 file_base, file_extension = os.path.splitext(os.path.basename(file_name))
                 file_extension = file_extension.replace('.', '').lower()
 
@@ -279,14 +284,16 @@ class ExifRename(object):
                     list_type = ListType.COMPRESSED_VIDEO_LIST
 
                 if list_type:
-                    metadata[self.EXIF_CREATE_DATE] = metadata.get(self.EXIF_CREATE_DATE, self.EXIF_UNKNOWN).replace(':','').replace(' ','_')
-                    metadata[self.EXIF_MAKE] = metadata.get(self.EXIF_MAKE, self.EXIF_UNKNOWN).replace(' ','')
-                    if metadata[self.EXIF_MAKE] == self.EXIF_UNKNOWN and list_type == ListType.RAW_IMAGE_LIST:
-                        metadata[self.EXIF_MAKE] = next((key for key, value in self.SUPPORTED_RAW_IMAGE_EXT.items() if any(ext in file_extension for ext in value)), self.EXIF_UNKNOWN)
-                    metadata[self.EXIF_MODEL] = metadata.get(self.EXIF_MODEL, self.EXIF_UNKNOWN).replace(' ','')
-                    if metadata[self.EXIF_MAKE] in metadata[self.EXIF_MODEL] and metadata[self.EXIF_MAKE] != self.EXIF_UNKNOWN:
-                        metadata[self.EXIF_MODEL] = metadata[self.EXIF_MODEL].replace(metadata[self.EXIF_MAKE], '').strip()
-                    dir_name = '_'.join([metadata[self.EXIF_MAKE], metadata[self.EXIF_MODEL], file_extension])
+                    metadata[ExifTag.CREATE_DATE.value] = metadata.get(ExifTag.CREATE_DATE.value, self.EXIF_UNKNOWN).replace(':','').replace(' ','_')
+                    metadata[ExifTag.MAKE.value] = metadata.get(ExifTag.MAKE.value, self.EXIF_UNKNOWN).replace(' ','')
+                    if metadata[ExifTag.MAKE.value] == self.EXIF_UNKNOWN and list_type == ListType.RAW_IMAGE_LIST:
+                        metadata[ExifTag.MAKE.value] = next((key for key, value in self.SUPPORTED_RAW_IMAGE_EXT.items() if any(ext in file_extension for ext in value)), self.EXIF_UNKNOWN)
+                    metadata[ExifTag.MODEL.value] = metadata.get(ExifTag.MODEL.value, self.EXIF_UNKNOWN).replace(' ','')
+                    if metadata[ExifTag.MAKE.value] in metadata[ExifTag.MODEL.value] and metadata[ExifTag.MAKE.value] != self.EXIF_UNKNOWN:
+                        metadata[ExifTag.MODEL.value] = metadata[ExifTag.MODEL.value].replace(metadata[ExifTag.MAKE.value], '').strip()
+                    dir_parts = [metadata[ExifTag.MAKE.value], metadata[ExifTag.MODEL.value], file_extension]
+                    dir_name = '_'.join(dir_parts).lower()
+                    # dir_name = '_'.join(map(lambda x: x[0].upper() + x[1:].lower(), dir_parts))
                     metadata[self.DIR_NAME] = dir_name
                     self._logger.debug(f"{list_type.value = }")
                     list_collection.setdefault(list_type.value, []).append(metadata)
@@ -327,6 +334,7 @@ def main():
             exif_rename.return_to_previous_state()
         print(f"{Fore.RED}ERROR: executing exif image renamer")
         print(f"EXCEPTION: {exception}{Style.RESET_ALL}")
+        exit_code = 1
     finally:
         sys.exit(exit_code)
 
