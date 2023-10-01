@@ -5,6 +5,7 @@
 from enum import Enum
 import os
 from pathlib import Path
+import shutil
 import sys
 import logging
 import logging.config
@@ -19,7 +20,6 @@ import asyncio
 # Third party imports
 from optparse import OptionParser, Values
 from pydngconverter import DNGConverter
-from colorama import Fore, Style
 from colorama import Fore, Style
 import exiftool
 
@@ -299,11 +299,12 @@ class ExifRename(object):
                 if dir_ext == 'dng':
                     continue
                 new_dir = f'{base_dir}_dng'
-                convert_list.append((f'{old_dir}/', new_dir))
+                convert_list.append((old_dir, new_dir))
             if len(convert_list) > 0:
                 self._logger.info(f"{convert_list = }")
                 convert_tasks = [self._convert_raw_files(old_dir, new_dir) for old_dir, new_dir in convert_list]
                 await asyncio.gather(*convert_tasks)
+                self._delete_org_raw_files(convert_list)
 
 
     async def _convert_raw_files(self, src_dir: str, dst_dir: str):
@@ -312,6 +313,24 @@ class ExifRename(object):
             os.makedirs(dst_dir)
         py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
         return await py_dng.convert()
+
+
+    def _delete_org_raw_files(self, convert_list: list[tuple[str, str]]):
+        """Deletes original raw files"""
+        for raw_dir, dng_dir in convert_list:
+            raw_files = [file_name.rsplit('.', 1)[0] for file_name in os.listdir(raw_dir)]
+            dng_files = [file_name.rsplit('.', 1)[0] for file_name in os.listdir(dng_dir)]
+            if all(file_name in dng_files for file_name in raw_files):
+                self._logger.info(f"Deleting directory: {raw_dir}")
+                shutil.rmtree(raw_dir)
+            else:
+                self._logger.info(f"Not deleting directory: {raw_dir}")
+                raw_file_ext = raw_dir.split('_')[-1]
+                matching_files = set(raw_files).intersection(dng_files)
+                for file_name in matching_files:
+                    full_file_name = os.path.join(raw_dir, f'{file_name}.{raw_file_ext}')
+                    self._logger.info(f"Deleting file: {full_file_name}")
+                    os.remove(full_file_name)
 
 
     @function_trace
