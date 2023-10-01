@@ -16,6 +16,8 @@ epr_log:
 epr_trace:
 	cd $(EPR_HOME) && python abk_epr.py -d ../data/20230725_mixed_img -c logging.yaml -v
 
+epr_clean:
+	cd $(EPR_HOME) && rm -Rf ../data/20230725_mixed_img && cp -R ../data/20230725_mixed_img_backup ../data/20230725_mixed_img
 
 # -----------------------------------------------------------------------------
 # Dependency installation Makefile rules
