@@ -64,8 +64,6 @@ class CommandLineOptions(object):
     options:Values
     logger:logging.Logger
 
-    # def __init__(self, args:Optional[list] = None, options:Optional[Values] = None):
-    # def __init__(self, args:list, options:Values):
     def __init__(self):
         pass
         # self._args = args
@@ -191,12 +189,6 @@ class ExifRename(object):
         self._project_name = None
 
 
-    def __del__(self):
-        pass
-        # if self._options.verbose:
-        #     self._logger.
-
-
     @property
     def project_name(self) -> str:
         """Returns project name"""
@@ -257,6 +249,7 @@ class ExifRename(object):
         if collection_dict:
             for key, value in collection_dict.items():
                 await self._move_and_rename_files(key, value)
+
 
     async def _rename_file_async(self, old_name: str, new_file: str) -> None:
         """Rename file asynchronously
@@ -379,7 +372,6 @@ class ExifRename(object):
                     dir_name = '_'.join(dir_parts).lower()
                     self._logger.debug(f"{list_type.value = }")
                     list_collection.setdefault(list_type.value, {}).setdefault(dir_name, []).append(metadata)
-
 
         if len(list_collection) == 0:
             raise Exception('no files to process for the current directory.')
