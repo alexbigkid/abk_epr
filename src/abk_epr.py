@@ -4,6 +4,7 @@
 # Standard library imports
 from enum import Enum
 import os
+from pathlib import Path
 import sys
 import logging
 import logging.config
@@ -12,14 +13,13 @@ import re
 from datetime import datetime
 import timeit
 import json
-from typing import Optional, Union
+from typing import Union
 import asyncio
 
 # Third party imports
 from optparse import OptionParser, Values
-from pydngconverter import DNGConverter, flags
+from pydngconverter import DNGConverter
 from colorama import Fore, Style
-from yaml.loader import Loader
 from colorama import Fore, Style
 import exiftool
 
@@ -142,10 +142,10 @@ class CommandLineOptions(object):
 
 class ListType(Enum):
     """ListType is type of image or video list"""
-    RAW_IMAGE_LIST = "raw_image_list"
-    THUMB_IMAGE_LIST = "thumb_image_list"
-    COMPRESSED_IMAGE_LIST = "compressed_image_list"
-    COMPRESSED_VIDEO_LIST = "compressed_video_list"
+    RAW_IMAGE_DICT = "raw_image_dict"
+    THUMB_IMAGE_DICT = "thumb_image_dict"
+    COMPRESSED_IMAGE_DICT = "compressed_image_dict"
+    COMPRESSED_VIDEO_DICT = "compressed_video_dict"
 
 
 class ExifTag(Enum):
@@ -188,6 +188,7 @@ class ExifRename(object):
         self._current_dir = None
         self._supported_raw_image_ext_list = list(set([ext for exts in self.SUPPORTED_RAW_IMAGE_EXT.values() for ext in exts]))
         self._logger.debug(f"{self._supported_raw_image_ext_list = }")
+        self._project_name = None
 
 
     def __del__(self):
@@ -196,21 +197,34 @@ class ExifRename(object):
         #     self._logger.
 
 
+    @property
+    def project_name(self) -> str:
+        """Returns project name"""
+        if self._project_name is None:
+            current_dir = os.getcwd()
+            norm_path = os.path.basename(os.path.normpath(current_dir))
+            dir_parts = norm_path.split('_')
+            self._project_name = '_'.join(dir_parts[1:])
+            self._logger.info(f"{self._project_name = }")
+        return self._project_name
+
+
     @function_trace
     def check_exiftool(self) -> None:
-        """Check EXIF tool installed"""
+        """Check EXIF tool is installed"""
         with exiftool.ExifTool() as exif_tool:
             exif_tool.logger=self._logger
             exiftool_exe = exif_tool.executable
             self._logger.debug(f'{exiftool_exe=}')
 
+
     @function_trace
-    def move_rename_convert_images(self) -> None:
+    async def move_rename_convert_images(self) -> None:
         """Move, rename and convert images"""
         self._validate_image_dir()
         self._change_to_image_dir()
         metadata_list = self._read_image_dir()
-        self._move_and_rename_files()
+        await self._move_and_rename_files_concurrently(metadata_list)
         self._change_from_image_dir()
 
 
@@ -238,15 +252,66 @@ class ExifRename(object):
 
 
     @function_trace
-    def _move_and_rename_files(self) -> None:
+    async def _move_and_rename_files_concurrently(self, collection_dict) -> None:
         """Moves and renames files"""
-        pass
+        if collection_dict:
+            for key, value in collection_dict.items():
+                await self._move_and_rename_files(key, value)
+
+    async def _rename_file_async(self, old_name: str, new_file: str) -> None:
+        """Rename file asynchronously
+        Args:
+            old_name (str): _description_
+            new_file (str): _description_
+        """
+        try:
+            os.rename(old_name, new_file)
+            self._logger.debug(f"renamed file: {old_name} to {new_file}")
+        except OSError as exp:
+            self._logger.error(f"Error renaming: {old_name}: {str(exp)}")
 
 
     @function_trace
-    def _convert_raw_files(self) -> None:
+    async def _move_and_rename_files(self, key, value) -> None:
+        """Moves and renames files"""
+        self._logger.info(f"_move_and_rename_files: {key = }, {value = }")
+        rename_files_list: list[tuple[str, str]] = []
+        for directory, obj_list in value.items():
+            file_ext = directory.split('_')[-1]
+            self._logger.info(f"{directory = }, {file_ext = }, {obj_list = }")
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            for obj in obj_list:
+                # self._logger.info(f'ABK: {obj = }')
+                new_file_name = f'./{directory}/{obj[ExifTag.CREATE_DATE.value]}_{obj[ExifTag.MAKE.value]}_{obj[ExifTag.MODEL.value]}_{self.project_name}.{file_ext}'.lower()
+                old_file_name = obj[ExifTag.SOURCE_FILE.value]
+                # self._logger.info(f"ABK: {old_file_name = }, {new_file_name = }")
+                rename_files_list.append((old_file_name, new_file_name))
+        if len(rename_files_list) > 0:
+            rename_tasks = [self._rename_file_async(old_name, new_name) for old_name, new_name in rename_files_list]
+            await asyncio.gather(*rename_tasks)
+
+        if key == ListType.RAW_IMAGE_DICT.value:
+            self._logger.info(f"{ListType.RAW_IMAGE_DICT.value = }")
+            convert_list: list[tuple[str, str]] = []
+            for old_dir, obj_list in value.items():
+                base_dir, dir_ext = old_dir.rsplit('_', 1)
+                if dir_ext == 'dng':
+                    continue
+                new_dir = f'{base_dir}_dng'
+                convert_list.append((f'{old_dir}/', new_dir))
+            if len(convert_list) > 0:
+                self._logger.info(f"{convert_list = }")
+                convert_tasks = [self._convert_raw_files(old_dir, new_dir) for old_dir, new_dir in convert_list]
+                await asyncio.gather(*convert_tasks)
+
+
+    async def _convert_raw_files(self, src_dir: str, dst_dir: str):
         """Converts raw files"""
-        pass
+        if not os.path.exists(dst_dir):
+            os.makedirs(dst_dir)
+        py_dng = DNGConverter(source=Path(src_dir), dest=Path(dst_dir))
+        return await py_dng.convert()
 
 
     @function_trace
@@ -269,34 +334,32 @@ class ExifRename(object):
                 file_extension = file_extension.replace('.', '').lower()
 
                 if file_extension in self._supported_raw_image_ext_list:
-                    list_type = ListType.RAW_IMAGE_LIST
+                    list_type = ListType.RAW_IMAGE_DICT
                 elif file_extension in self.SUPPORTED_COMPRESSED_IMAGE_EXT_LIST:
                     if file_extension == self.THMB['ext']:
                         if any(f'{file_base.lower()}{raw_ext}' in [j.lower() for j in filtered_list] for raw_ext in self._supported_raw_image_ext_list):
                             file_extension = self.THMB['dir']
                             self._logger.debug(f'{file_extension=} for file: {file_name}')
-                            list_type = ListType.THUMB_IMAGE_LIST
+                            list_type = ListType.THUMB_IMAGE_DICT
                         else:
-                            list_type = ListType.COMPRESSED_IMAGE_LIST
+                            list_type = ListType.COMPRESSED_IMAGE_DICT
                     else:
-                        list_type = ListType.COMPRESSED_IMAGE_LIST
+                        list_type = ListType.COMPRESSED_IMAGE_DICT
                 elif file_extension in self.SUPPORTED_COMPRESSED_VIDEO_EXT_LIST:
-                    list_type = ListType.COMPRESSED_VIDEO_LIST
+                    list_type = ListType.COMPRESSED_VIDEO_DICT
 
                 if list_type:
                     metadata[ExifTag.CREATE_DATE.value] = metadata.get(ExifTag.CREATE_DATE.value, self.EXIF_UNKNOWN).replace(':','').replace(' ','_')
                     metadata[ExifTag.MAKE.value] = metadata.get(ExifTag.MAKE.value, self.EXIF_UNKNOWN).replace(' ','')
-                    if metadata[ExifTag.MAKE.value] == self.EXIF_UNKNOWN and list_type == ListType.RAW_IMAGE_LIST:
+                    if metadata[ExifTag.MAKE.value] == self.EXIF_UNKNOWN and list_type == ListType.RAW_IMAGE_DICT:
                         metadata[ExifTag.MAKE.value] = next((key for key, value in self.SUPPORTED_RAW_IMAGE_EXT.items() if any(ext in file_extension for ext in value)), self.EXIF_UNKNOWN)
                     metadata[ExifTag.MODEL.value] = metadata.get(ExifTag.MODEL.value, self.EXIF_UNKNOWN).replace(' ','')
                     if metadata[ExifTag.MAKE.value] in metadata[ExifTag.MODEL.value] and metadata[ExifTag.MAKE.value] != self.EXIF_UNKNOWN:
                         metadata[ExifTag.MODEL.value] = metadata[ExifTag.MODEL.value].replace(metadata[ExifTag.MAKE.value], '').strip()
                     dir_parts = [metadata[ExifTag.MAKE.value], metadata[ExifTag.MODEL.value], file_extension]
                     dir_name = '_'.join(dir_parts).lower()
-                    # dir_name = '_'.join(map(lambda x: x[0].upper() + x[1:].lower(), dir_parts))
-                    metadata[self.DIR_NAME] = dir_name
                     self._logger.debug(f"{list_type.value = }")
-                    list_collection.setdefault(list_type.value, []).append(metadata)
+                    list_collection.setdefault(list_type.value, {}).setdefault(dir_name, []).append(metadata)
 
 
         if len(list_collection) == 0:
@@ -318,7 +381,7 @@ class ExifRename(object):
 
 
 
-def main():
+async def main():
     """Main program to order images"""
     exit_code = 1
     exif_rename = None
@@ -327,7 +390,7 @@ def main():
         command_line_options.handle_options()
         exif_rename = ExifRename(logger=command_line_options.logger, options=command_line_options.options)
         exif_rename.check_exiftool()
-        exif_rename.move_rename_convert_images()
+        await exif_rename.move_rename_convert_images()
         exit_code = 0
     except Exception as exception:
         if exif_rename:
@@ -340,4 +403,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
