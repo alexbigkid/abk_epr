@@ -16,7 +16,7 @@ from context import CommandLineOptions, ExifRename
 
 
 
-class TestExifRename(unittest.TestCase):
+class TestExifRename(unittest.IsolatedAsyncioTestCase):
     TEST_IMAGE_DIR = './20220101_unittest_image_dir'
     TEST_CURRENT_DIR = './20220101_unittest_current_dir'
     _current_dir = None
@@ -85,7 +85,7 @@ loggers:
         '20220132_INVALID_DAY',
         '20220229_INVALID_DAY_NOT_LEAP_YEAR',
     ])
-    def test_ExifRename__move_rename_convert_images_throws_given_image_dir_has_invalid_format(self, image_dir:str) -> None:
+    async def test_ExifRename__move_rename_convert_images_throws_given_image_dir_has_invalid_format(self, image_dir:str) -> None:
         with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
             self.clo.options.config_log_file = 'valid.yaml'
             self.clo.options.dir = image_dir
@@ -96,7 +96,7 @@ loggers:
                 with patch('os.chdir') as mock_chdir:
                     with patch('os.listdir') as mock_listdir:
                         with self.assertRaises(Exception) as context:
-                            self.mut.move_rename_convert_images()
+                            await self.mut.move_rename_convert_images()
                         self.assertEqual(
                             f"Not a valid date / directory format, please use: YYYYMMDD_name_of_the_project",
                             str(context.exception)
@@ -106,7 +106,7 @@ loggers:
             self.assertEqual(mock_getcwd.mock_calls, [call()])
 
 
-    def test_ExifRename__move_rename_convert_images_throws_given_image_dir_does_not_exist(self) -> None:
+    async def test_ExifRename__move_rename_convert_images_throws_given_image_dir_does_not_exist(self) -> None:
         with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
             self.clo.options.config_log_file = 'valid.yaml'
             self.clo._setup_logging()
@@ -115,14 +115,14 @@ loggers:
             with patch('os.getcwd', return_value=self.TEST_CURRENT_DIR) as mock_getcwd:
                 with patch('os.chdir', side_effect=Exception(f"No such file or directory: '{self.TEST_IMAGE_DIR}'")) as mock_chdir:
                     with self.assertRaises(Exception) as context:
-                        self.mut.move_rename_convert_images()
+                        await self.mut.move_rename_convert_images()
                     self.assertEqual(f"No such file or directory: '{self.TEST_IMAGE_DIR}'", str(context.exception))
                 self.assertEqual(mock_chdir.mock_calls, [call(self.TEST_IMAGE_DIR)])
             self.assertEqual(mock_getcwd.mock_calls, [call(), call()])
 
 
     @patch('exiftool.ExifTool')
-    def test_ExifRename__check_exiftool__get_tests_run_withoutexiftool_installed(self, mock_exif) -> None:
+    async def test_ExifRename__check_exiftool__get_tests_run_without_exiftool_installed(self, mock_exif) -> None:
         with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
             self.clo.options.config_log_file = 'valid.yaml'
             self.clo._setup_logging()
@@ -141,7 +141,7 @@ loggers:
     @patch('os.listdir')
     @patch('os.chdir')
     @patch('os.getcwd')
-    def test_ExifRename__move_rename_convert_images_does_not_change_dir_given_it_is_current_dir(self, mock_getcwd, mock_chdir, mock_listdir, mock_eth) -> None:
+    async def test_ExifRename__move_rename_convert_images_does_not_change_dir_given_it_is_current_dir(self, mock_getcwd, mock_chdir, mock_listdir, mock_eth) -> None:
         with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
             self.clo.options.config_log_file = 'valid.yaml'
             self.clo.options.dir = '.'
@@ -155,7 +155,7 @@ loggers:
             # with patch('exiftool.ExifTool') as mock_exif:
                 # mock_exif.return_value.executable = '/path/to/exiftool'
             with self.assertRaises(Exception) as context:
-                self.mut.move_rename_convert_images()
+                await self.mut.move_rename_convert_images()
 
             self.assertEqual("no files to process for the current directory.", str(context.exception))
             print(f"{mock_eth.mock_calls = }")
@@ -170,7 +170,7 @@ loggers:
     @patch('os.listdir')
     @patch('os.chdir')
     @patch('os.getcwd')
-    def test_ExifRename__move_rename_convert_images_calls_get_change_list_dir(self, mock_getcwd, mock_chdir, mock_listdir, mock_eth_gt) -> None:
+    async def test_ExifRename__move_rename_convert_images_calls_get_change_list_dir(self, mock_getcwd, mock_chdir, mock_listdir, mock_eth_gt) -> None:
         with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
             self.clo.options.config_log_file = 'valid.yaml'
             self.clo.options.dir = '.'
@@ -206,7 +206,7 @@ loggers:
 }]
 
             with patch('os.path.isfile', return_value=True) as mock_isfile:
-                self.mut.move_rename_convert_images()
+                await self.mut.move_rename_convert_images()
 
             self.assertEqual(mock_isfile.mock_calls, [call(files_to_return[0]), call(files_to_return[1])])
             self.assertEqual(mock_eth_gt.mock_calls, [call(files=files_to_return, tags=['EXIF:CreateDate', 'EXIF:Make', 'EXIF:Model'])])
