@@ -8,8 +8,10 @@ from unittest.mock import mock_open, patch, call
 from optparse import Values
 from parameterized import parameterized
 
+
 # Local application imports
-from context import CommandLineOptions, ExifRename
+from abk_epr.clo import CommandLineOptions
+from abk_epr.epr import ExifRename
 # import exiftool
 
 
@@ -50,29 +52,6 @@ loggers:
         self.clo = CommandLineOptions()
         self.clo.options = values
         return super().setUp()
-
-    # -------------------------------------------------------------------------
-    # Tests for CommandLineOptions
-    # -------------------------------------------------------------------------
-    def test_CommandLineOptions__setup_logger_throws_given_yaml_config_file_does_not_exist(
-        self,
-    ) -> None:
-        """Test test_CommandLineOptions__setup_logger_throws_given_yaml_config_file_does_not_exist."""  # noqa: E501
-        with self.assertRaises(IOError) as context:
-            self.clo.options.config_log_file = "NotValidFile.yaml"
-            self.clo._setup_logging()
-        self.assertEqual(
-            str(context.exception), "[Errno 2] No such file or directory: 'NotValidFile.yaml'"
-        )
-
-    def test_CommandLineOptions__setup_logger_throws_given_invalid_yaml_file(self) -> None:
-        """Test test_CommandLineOptions__setup_logger_throws_given_invalid_yaml_file."""
-        with patch("builtins.open", mock_open(read_data='{"notValid": 2}')) as mock_file:
-            with self.assertRaises(ValueError) as context:
-                self.clo.options.config_log_file = "valid.yaml"
-                self.clo._setup_logging()
-            self.assertEqual(str(context.exception), "valid.yaml is not a valid yaml format")
-            mock_file.assert_called_with("valid.yaml", "r", encoding="utf-8")
 
     # -------------------------------------------------------------------------
     # Tests for ExifRename
@@ -143,9 +122,8 @@ loggers:
         """Test test_ExifRename__check_exiftool__get_tests_run_without_exiftool_installed."""
         with patch("builtins.open", mock_open(read_data=self.yaml_file)) as mock_file:
             self.clo.options.config_log_file = "valid.yaml"
-            self.clo._setup_logging()
             mock_file.assert_called_with("valid.yaml", "r", encoding="utf-8")
-            self.mut = ExifRename(logger=self.clo.logger, options=self.clo.options)
+            self.mut = ExifRename(logger=self.clo.logger, op_dir=self.clo.options.dir)
             mock_exif.return_value.executable = "/path/to/exiftool"
 
             try:
