@@ -1,11 +1,13 @@
 {
     "cSpell.words": [
+        "asyncio",
         "colorama",
         "decorater",
         "Exif",
         "exiftool",
         "Leica",
         "pydngconverter",
+        "pytest",
         "renamer",
         "THMB"
     ]

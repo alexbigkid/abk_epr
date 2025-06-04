@@ -1,7 +1,7 @@
 [project]
 name = "abk_epr"
 version = "0.1.0"
-description = "EXIF picture renaming app"
+description = "EXIF-based image renamer and converter"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
@@ -27,7 +27,9 @@ dev = [
     "coverage",
     "parameterized",
     "ruff",
-    "tox",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov"
 ]
 debug = [
     "build",
@@ -44,7 +46,7 @@ debug = [
 
 [project.scripts]
 epr = "abk_epr.cli:main"
-test = "unittest:main"
+# test = "pytest"
 
 
 [tool.uv]
@@ -60,9 +62,20 @@ build-backend = "hatchling.build"
 # build-backend = "setuptools.build_meta"
 
 
-[tool.unittest.ini_options]
+[tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+
+[tool.coverage.run]
+source = ["abk_epr"]
+branch = true
+
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
 
 [tool.ruff]
 line-length = 98
@@ -108,3 +121,7 @@ docstring-code-format = true
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
+
+
+[tool.hatch.build]
+include = ["src/abk_epr"]

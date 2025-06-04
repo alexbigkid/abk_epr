@@ -1,0 +1,117 @@
+"""Pytest tests for epr.py."""
+
+# Standard library
+from unittest.mock import mock_open, patch, call
+
+# Third-party
+import pytest
+from optparse import Values
+from parameterized import parameterized
+
+# Local
+from abk_epr.clo import CommandLineOptions
+from abk_epr.epr import ExifRename
+
+
+@pytest.fixture
+def yaml_file():
+    return """version: 1
+disable_existing_loggers: True
+formatters:
+    abkFormatterShort:
+        format: '[%(asctime)s]:[%(funcName)s]:[%(levelname)s]: %(message)s'
+        datefmt: '%Y%m%d %H:%M:%S'
+handlers:
+    consoleHandler:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: abkFormatterShort
+        stream: ext://sys.stdout
+loggers:
+    consoleLogger:
+        level: DEBUG
+        handlers: [consoleHandler]
+        qualname: consoleLogger
+        propagate: no
+"""
+
+
+@pytest.fixture
+def clo():
+    values = Values()
+    values.dir = "./20220101_unittest_image_dir"
+    values.verbose = False
+    values.log_into_file = False
+    clo = CommandLineOptions()
+    clo.options = values
+    return clo
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("image_dir", [
+    "./NODATE_unittest_image_dir",
+    "/blah-blah/INVALID_DIR_FORMAT_20220101_unittest_image_dir/",
+    "../data/20220101NO_UNDERSCORE_DIR",
+    "020221301_TOO_MANY_DIGITS",
+    "0221301_NOT_ENOUGH_DIGITS",
+    "00000101_INVALID_YEAR",
+    "20221301_INVALID_MONTH",
+    "20220132_INVALID_DAY",
+    "20220229_INVALID_DAY_NOT_LEAP_YEAR",
+])
+async def test_invalid_image_dir_format(image_dir, clo, yaml_file):
+    with patch("builtins.open", mock_open(read_data=yaml_file)) as mock_file:
+        clo.options.config_log_file = "valid.yaml"
+        clo.options.dir = image_dir
+        clo._setup_logging()
+        mock_file.assert_called_with("valid.yaml", "r", encoding="utf-8")
+        mut = ExifRename(logger=clo.logger, options=clo.options)
+        with patch("os.getcwd") as mock_getcwd, \
+             patch("os.chdir") as mock_chdir, \
+             patch("os.listdir") as mock_listdir:
+
+            with pytest.raises(Exception) as exc_info:
+                await mut.move_rename_convert_images()
+
+            assert str(exc_info.value) == "Not a valid date / directory format, please use: YYYYMMDD_name_of_the_project"
+            assert mock_listdir.mock_calls == []
+            assert mock_chdir.mock_calls == []
+            assert mock_getcwd.mock_calls == [call()]
+
+
+@pytest.mark.asyncio
+async def test_image_dir_does_not_exist(clo, yaml_file):
+    test_dir = "./20220101_unittest_image_dir"
+    test_cwd = "./20220101_unittest_current_dir"
+
+    with patch("builtins.open", mock_open(read_data=yaml_file)) as mock_file:
+        clo.options.config_log_file = "valid.yaml"
+        clo._setup_logging()
+        mock_file.assert_called_with("valid.yaml", "r", encoding="utf-8")
+
+        mut = ExifRename(logger=clo.logger, options=clo.options)
+
+        with patch("os.getcwd", return_value=test_cwd) as mock_getcwd, \
+             patch("os.chdir", side_effect=Exception(f"No such file or directory: '{test_dir}'")) as mock_chdir:
+
+            with pytest.raises(Exception) as exc_info:
+                await mut.move_rename_convert_images()
+
+            assert str(exc_info.value) == f"No such file or directory: '{test_dir}'"
+            assert mock_chdir.mock_calls == [call(test_dir)]
+            assert mock_getcwd.mock_calls == [call(), call()]
+
+
+@patch("exiftool.ExifTool")
+def test_check_exiftool_runs_without_error(mock_exif, clo, yaml_file):
+    with patch("builtins.open", mock_open(read_data=yaml_file)) as mock_file:
+        clo.options.config_log_file = "valid.yaml"
+        mock_file.assert_called_with("valid.yaml", "r", encoding="utf-8")
+
+        mut = ExifRename(logger=clo.logger, op_dir=clo.options.dir)
+        mock_exif.return_value.executable = "/path/to/exiftool"
+
+        try:
+            mut.check_exiftool()
+        except Exception as exc:
+            pytest.fail(f"Unexpected exception occurred: {exc}")

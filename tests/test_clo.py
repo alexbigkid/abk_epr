@@ -1,12 +1,12 @@
 """Command line options for the Bing Wallpaper application."""
 
-# Standard library imports
 import sys
-import unittest
 from unittest.mock import patch, MagicMock
 
-# MUT
+import pytest
+
 from abk_epr import clo
+
 
 # Mock CONST for tests
 class CONST:
@@ -24,61 +24,61 @@ class CONST:
 clo.CONST = CONST
 
 
-class TestCommandLineOptions(unittest.TestCase):
-    """Test class for the CommandLineOptions class."""
-
-    def setUp(self):
-        """Set up a fresh instance of CommandLineOptions before each test."""
-        self.cmd = clo.CommandLineOptions()
-
-    @patch("abk_epr.clo.LoggerManager.get_logger", return_value=MagicMock())
-    @patch("abk_epr.clo.LoggerManager.configure")
-    def test_handle_options_version_exit(self, mock_configure, mock_get_logger):
-        """Test that passing '--version' prints version info and exits cleanly."""
-        testargs = ["prog", "--version"]
-        self.cmd._args = testargs
-        with (
-            patch.object(sys, "argv", testargs),
-            patch("builtins.print") as mock_print,
-            self.assertRaises(SystemExit) as cm,
-        ):
-            self.cmd.handle_options()
-        mock_print.assert_called_once_with(f"{CONST.NAME} version: {CONST.VERSION}")
-        self.assertEqual(cm.exception.code, 0)
-        mock_configure.assert_not_called()
-        mock_get_logger.assert_not_called()
-
-    @patch("abk_epr.clo.LoggerManager.get_logger", return_value=MagicMock())
-    @patch("abk_epr.clo.LoggerManager.configure")
-    def test_handle_options_about_exit(self, mock_configure, mock_get_logger):
-        """Test that passing '--about' prints app metadata and exits cleanly."""
-        testargs = ["prog", "--about"]
-        self.cmd._args = testargs
-        with (
-            patch.object(sys, "argv", testargs),
-            patch("builtins.print") as mock_print,
-            self.assertRaises(SystemExit) as cm,
-        ):
-            self.cmd.handle_options()
-        mock_print.assert_any_call(f"Name       : {CONST.NAME}")
-        mock_print.assert_any_call(f"Version    : {CONST.VERSION}")
-        self.assertEqual(cm.exception.code, 0)
-        mock_configure.assert_not_called()
-        mock_get_logger.assert_not_called()
-
-    @patch("abk_epr.clo.LoggerManager.get_logger", return_value=MagicMock())
-    @patch("abk_epr.clo.LoggerManager.configure")
-    def test_handle_options_parse_args(self, mock_configure, mock_get_logger):
-        """Test that command-line arguments are correctly parsed into options."""
-        testargs = ["prog", "-d", "test_dir", "-l"]
-        with patch.object(sys, "argv", testargs):
-            self.cmd.handle_options()
-            self.assertEqual(self.cmd.options.dir, "test_dir")
-            self.assertTrue(self.cmd.options.log_into_file)
-            self.assertFalse(self.cmd.options.quiet)
-            mock_configure.assert_called_once_with(log_into_file=True, quiet=False)
-            mock_get_logger.assert_called_once_with("abk_epr.clo")
+@pytest.fixture
+def cmd_options():
+    """Command Options."""
+    return clo.CommandLineOptions()
 
 
-if __name__ == "__main__":
-    unittest.main()
+@patch("abk_epr.clo.LoggerManager.get_logger", return_value=MagicMock())
+@patch("abk_epr.clo.LoggerManager.configure")
+def test_handle_options_version_exit(mock_configure, mock_get_logger, cmd_options):
+    """Test that passing '--version' prints version info and exits cleanly."""
+    testargs = ["prog", "--version"]
+    cmd_options._args = testargs
+    with (
+        patch.object(sys, "argv", testargs),
+        patch("builtins.print") as mock_print,
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        cmd_options.handle_options()
+
+    mock_print.assert_called_once_with(f"{CONST.NAME} version: {CONST.VERSION}")
+    assert exc_info.value.code == 0  # noqa: S101
+    mock_configure.assert_not_called()
+    mock_get_logger.assert_not_called()
+
+
+@patch("abk_epr.clo.LoggerManager.get_logger", return_value=MagicMock())
+@patch("abk_epr.clo.LoggerManager.configure")
+def test_handle_options_about_exit(mock_configure, mock_get_logger, cmd_options):
+    """Test that passing '--about' prints app metadata and exits cleanly."""
+    testargs = ["prog", "--about"]
+    cmd_options._args = testargs
+    with (
+        patch.object(sys, "argv", testargs),
+        patch("builtins.print") as mock_print,
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        cmd_options.handle_options()
+
+    mock_print.assert_any_call(f"Name       : {CONST.NAME}")
+    mock_print.assert_any_call(f"Version    : {CONST.VERSION}")
+    assert exc_info.value.code == 0  # noqa: S101
+    mock_configure.assert_not_called()
+    mock_get_logger.assert_not_called()
+
+
+@patch("abk_epr.clo.LoggerManager.get_logger", return_value=MagicMock())
+@patch("abk_epr.clo.LoggerManager.configure")
+def test_handle_options_parse_args(mock_configure, mock_get_logger, cmd_options):
+    """Test that command-line arguments are correctly parsed into options."""
+    testargs = ["prog", "-d", "test_dir", "-l"]
+    with patch.object(sys, "argv", testargs):
+        cmd_options.handle_options()
+
+    assert cmd_options.options.dir == "test_dir"  # noqa: S101
+    assert cmd_options.options.log_into_file is True  # noqa: S101
+    assert cmd_options.options.quiet is False  # noqa: S101
+    mock_configure.assert_called_once_with(log_into_file=True, quiet=False)
+    mock_get_logger.assert_called_once_with("abk_epr.clo")
