@@ -36,8 +36,7 @@ class CommandLineOptions:
     def handle_options(self) -> None:
         """Handles user specified options and arguments."""
         parser = ArgumentParser(
-            prog="epr",
-            description="epr - rename and translate images from raw to dng format"
+            prog="epr", description="epr - rename and translate images from raw to dng format"
         )
         parser.add_argument(
             "-a", "--about", action="store_true", help="Show detailed project metadata"
@@ -48,7 +47,7 @@ class CommandLineOptions:
             action="store",
             dest="dir",
             default=".",
-            help="directory, where images will be converted and renamed"
+            help="directory, where images will be converted and renamed",
         )
         parser.add_argument(
             "-l",
@@ -56,7 +55,7 @@ class CommandLineOptions:
             action="store_true",
             dest="log_into_file",
             default=False,
-            help="log into logs/abk_epr.log"
+            help="log into logs/abk_epr.log",
         )
         parser.add_argument("-q", "--quiet", action="store_true", help="Suppresses all logs")
         parser.add_argument(
