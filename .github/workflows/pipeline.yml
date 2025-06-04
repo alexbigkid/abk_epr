@@ -9,22 +9,35 @@ env:
     ENV: prod
 
 jobs:
-    Deploy:
+    ruff:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            - name: Run Ruff lint
+              uses: astral-sh/ruff-action@v3
+              with:
+                args: check
+
+    build:
         name: Run on ${{ matrix.py }} - ${{ matrix.os }}
+        needs: ruff
         runs-on: ${{ matrix.os }}-latest
         strategy:
             matrix:
                 # os: [ubuntu-latest]
                 os: [ ubuntu, macOS, windows ]
-                py: [ "3.8", "3.9", "3.10", "3.11" ]
+                py: [ "3.12", "3.13"]
 
         steps:
             - name: checkout repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
             - name: setup python ${{ matrix.py }}
-              uses: actions/setup-python@v3
+              uses: actions/setup-python@v5
               with:
                 python-version: ${{ matrix.py }}
+            - name: Install uv
+              uses: astral-sh/setup-uv@v3
             - name: Python Info
               run: |
                 echo ""
@@ -38,12 +51,19 @@ jobs:
                 echo "------------------------"
                 python3 --version
             - name: install dependencies
-              run: make install_test
-            - name: install tox-gh
-              run: python -m pip install tox-gh
+              run: uv sync
+            # - name: install tox-gh
+            #   run: python -m pip install tox-gh
             - name: run unit tests
-              run: make test_vff
+              run: make test
             # coverage has a problem with windows so not running it if windows OS
             - name: run coverage
               if: "!contains(matrix.os, 'windows')"
               run: make coverage
+            - name: Upload coverage to Codecov
+              if: "!contains(matrix.os, 'windows')"
+              uses: codecov/codecov-action@v5
+              with:
+                files: ./coverage.xml
+                flags: unittests
+                name: codecov-coverage
