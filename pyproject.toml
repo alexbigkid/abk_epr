@@ -1,0 +1,110 @@
+[project]
+name = "abk_epr"
+version = "0.1.0"
+description = "EXIF picture renaming app"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "ABK", email = "alexbigkid@users.noreply.github.com"}
+]
+maintainers = [
+    { name = "ABK", email = "alexbigkid@users.noreply.github.com"}
+]
+keywords = ["exif", "images", "pictures", "rename", "convert"]
+dependencies = [
+    "colorama",
+    "pydngconverter",
+    "PyExifTool",
+    "PyYAML",
+    "reactivex>=4.0.4",
+]
+
+
+# [project.optional-dependencies]
+[dependency-groups]
+dev = [
+    "coverage",
+    "parameterized",
+    "ruff",
+    "tox",
+]
+debug = [
+    "build",
+    "setuptools",
+    "twine",
+    "pip-check",
+    "pip-date",
+    "pip-chill",
+    "pipdeptree",
+    "pre-commit",
+    "wheel"
+]
+
+
+[project.scripts]
+epr = "abk_epr.cli:main"
+test = "unittest:main"
+
+
+[tool.uv]
+managed = true
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+# requires = ["uv"]
+# build-backend = "uv_build"
+# requires = ["setuptools>=42", "wheel"]
+# build-backend = "setuptools.build_meta"
+
+
+[tool.unittest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 98
+indent-width = 4
+src = ["src", "tests"]
+
+
+[tool.ruff.lint]
+preview = true
+select = [
+    # pycodestyle
+    "E",
+    "W",
+    # pydocstyle
+    "D",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bandit
+    "S",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    "E302",
+    "F401"
+]
+extend-ignore = ["D203", "E231", "E202", "S108"]
+
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+
+[tool.ruff.format]
+line-ending = "lf"
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = true
+docstring-code-format = true
+
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2

@@ -1,6 +1,6 @@
 .PHONY:	upgrade_setuptools install install_dev install_nth test test_v test_ff test_vff settings help
 .SILENT: epr coverage clean
-EPR_HOME = src
+EPR_HOME = src/abk_epr
 
 # -----------------------------------------------------------------------------
 # abk_epr Makefile rules
@@ -10,11 +10,8 @@ epr:
 	echo "------------------------------------------------------------------------------------"
 	cd $(EPR_HOME) && python abk_epr.py -d ../data/20230725_mixed_img -c logging.yaml -v
 
-epr_log:
+log:
 	cd $(EPR_HOME) && python abk_epr.py -d ../data/20230725_mixed_img -c logging.yaml -l -v
-
-epr_trace:
-	cd $(EPR_HOME) && python abk_epr.py -d ../data/20230725_mixed_img -c logging.yaml -v
 
 epr_clean:
 	cd $(EPR_HOME) && rm -Rf ../data/20230725_mixed_img && cp -R ../data/20230725_mixed_img_backup ../data/20230725_mixed_img
@@ -22,51 +19,39 @@ epr_clean:
 # -----------------------------------------------------------------------------
 # Dependency installation Makefile rules
 # -----------------------------------------------------------------------------
-upgrade_setuptools:
-	pip install --upgrade setuptools
+install:
+	uv sync
 
-install: upgrade_setuptools
-	pip install --requirement requirements.txt
-
-install_test: upgrade_setuptools
-	pip install --requirement requirements_test.txt
-
-install_dev: upgrade_setuptools
-	pip install --requirement requirements_dev.txt
+install_debug:
+	uv pip install --group debug
 
 
 # -----------------------------------------------------------------------------
 # Running tests Makefile rules
 # -----------------------------------------------------------------------------
 test:
-	python -m unittest discover --start-directory tests
+	uv run python -m unittest discover --start-directory tests
 
 test_ff:
-	python -m unittest discover --start-directory tests --failfast
+	uv run python -m unittest discover --start-directory tests --failfast
 
 test_v:
-	python -m unittest discover --start-directory tests --verbose
+	uv run python -m unittest discover --start-directory tests --verbose
 
 test_vff:
-	python -m unittest discover --start-directory tests --verbose --failfast
+	uv run python -m unittest discover --start-directory tests --verbose --failfast
 
 %:
 	@:
 
 test_1:
-	python -m unittest "tests.$(filter-out $@,$(MAKECMDGOALS))"
+	uv run python -m unittest "tests.$(filter-out $@,$(MAKECMDGOALS))"
 
 coverage:
-	coverage run --source $(EPR_HOME) --omit ./tests/*,./$(EPR_HOME)/config/*  -m unittest discover --start-directory tests
+	uv run coverage run --source $(EPR_HOME) --omit ./tests/*,./$(EPR_HOME)/config/*  -m unittest discover --start-directory tests
 	@echo
-	coverage report
-	coverage xml
-
-# coverage:
-# 	coverage run --source src --omit src/__init__.py -m unittest discover --start-directory tests
-# 	@echo
-# 	coverage report
-# 	coverage xml
+	uv run coverage report
+	uv run coverage xml
 
 
 # -----------------------------------------------------------------------------
@@ -135,15 +120,17 @@ settings:
 	@echo "HOME             = ${HOME}"
 	@echo "PWD              = ${PWD}"
 	@echo "SHELL            = ${SHELL}"
+	@echo "EPR_HOME         = $(EPR_HOME)"
 
 help:
 	@echo "Targets:"
 	@echo "--------------------------------------------------------------------------------"
 	@echo "  epr                - executes the main program to rename images"
+	@echo "  quiet              - executes the abk_epr in quiet mode (no logs)"
+	@echo "  log                - executes the abk_epr with logging into a file: logs/abk_epr.log"
 	@echo "--------------------------------------------------------------------------------"
 	@echo "  install            - installs required packages"
-	@echo "  install_test       - installs required test packages"
-	@echo "  install_dev        - installs required development packages"
+	@echo "  install_debug      - installs required debug packages"
 	@echo "--------------------------------------------------------------------------------"
 	@echo "  test               - runs test"
 	@echo "  test_v             - runs test with verbose messaging"
