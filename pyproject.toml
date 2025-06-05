@@ -62,6 +62,10 @@ build-backend = "hatchling.build"
 # build-backend = "setuptools.build_meta"
 
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/abk_epr"]
+
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
